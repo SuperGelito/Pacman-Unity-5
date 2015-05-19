@@ -4,22 +4,6 @@ using System.Collections;
 public class PacmanMove : MonoBehaviour {
 	//Set the velocity
 	public float speed = 0.4f;
-
-	//Matrix with all positions
-	public Transform[] positionsRow1;
-	public Transform[] positionsRow2;
-	public Transform[] positionsRow3;
-	public Transform[] positionsRow4;
-	public Transform[] positionsRow5;
-	public Transform[] positionsRow6;
-	public Transform[] positionsRow7;
-	public Transform[] positionsRow8;
-	public Transform[] positionsRow9;
-	public Transform[] positionsRow10;
-	public Transform[] positionsRow11;
-
-
-
 	//Destination position
 	Vector2 dest = Vector2.zero;
 
@@ -36,7 +20,6 @@ public class PacmanMove : MonoBehaviour {
 
 		// Check for Input if not moving
 		if ((Vector2)transform.position == dest) {
-			//Evaluate next movement
 			if (Input.GetKey(KeyCode.UpArrow) && valid(Vector2.up))
 				dest = (Vector2)transform.position + Vector2.up;
 			if (Input.GetKey(KeyCode.RightArrow) && valid(Vector2.right))
@@ -53,11 +36,6 @@ public class PacmanMove : MonoBehaviour {
 		GetComponent<Animator>().SetFloat("DirX", dir.x);
 		GetComponent<Animator>().SetFloat("DirY", dir.y);
 	}
-
-	Vector2 GetNextMovement(){
-		return new Vector2 ();
-	}
-
 
 	bool valid(Vector2 dir) {
 		// Cast Line from 'next to Pac-Man' to 'Pac-Man'
