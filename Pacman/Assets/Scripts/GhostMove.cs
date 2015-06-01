@@ -10,7 +10,7 @@ public class GhostMove : MonoBehaviour {
 	public float speed = 0.3f;
 	// Update is called once per frame
 	void FixedUpdate () {
-
+		/*
 		// Waypoint not reached yet? then move closer
 		if (transform.position != waypoints[cur].position) {
 			Vector2 p = Vector2.MoveTowards(transform.position,
@@ -24,11 +24,15 @@ public class GhostMove : MonoBehaviour {
 		// Animation
 		Vector2 dir = waypoints[cur].position - transform.position;
 		GetComponent<Animator>().SetFloat("DirX", dir.x);
-		GetComponent<Animator>().SetFloat("DirY", dir.y);
+		GetComponent<Animator>().SetFloat("DirY", dir.y);*/
 	}
 
 	void OnTriggerEnter2D(Collider2D co) {
-		if (co.name == "pacman")
-			Destroy(co.gameObject);
+		if (co.name == "pacman") {
+			PacmanMove sc = co.gameObject.GetComponent<PacmanMove>();
+			sc.Kill();
+
+		}
+
 	}
 }
