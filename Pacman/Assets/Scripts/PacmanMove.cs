@@ -11,9 +11,9 @@ public class PacmanMove : MonoBehaviour {
 	//Destination position
 	Vector2 dest = Vector2.zero;
 	//Radious of pacman
-	public float radius = 0.50f;
+	public float radius = 0.9f;
 	//Distance to move per action
-	float distance = 1f;
+	float distance = 0.45f;
 	//Actions to move
 	List<Vector2> route;
 	#region Unity events
@@ -39,16 +39,16 @@ public class PacmanMove : MonoBehaviour {
 				route.Remove(route.First());
 				dest=(Vector2)transform.position + nextMov;
 			}
-			/*
-			if (Input.GetKey(KeyCode.UpArrow) && valid(Vector2.up))
-				dest = (Vector2)transform.position + Vector2.up;
-			if (Input.GetKey(KeyCode.RightArrow) && valid(Vector2.right))
-				dest = (Vector2)transform.position + Vector2.right;
-			if (Input.GetKey(KeyCode.DownArrow) && valid(-Vector2.up))
-				dest = (Vector2)transform.position - Vector2.up;
-			if (Input.GetKey(KeyCode.LeftArrow) && valid(-Vector2.right))
-				dest = (Vector2)transform.position - Vector2.right;
-			 */
+
+			if (Input.GetKey(KeyCode.UpArrow))
+				Move(Vector2.up);
+			if (Input.GetKey(KeyCode.RightArrow))
+				Move(Vector2.right);
+			if (Input.GetKey(KeyCode.DownArrow))
+				Move(-Vector2.up);
+			if (Input.GetKey(KeyCode.LeftArrow))
+				Move(-Vector2.right);
+			 
 		}
 
 		//Check for animation to be used
@@ -94,6 +94,8 @@ public class PacmanMove : MonoBehaviour {
 	public void Move(Vector2 dir)
 	{
 		if (valid (dir)) {
+			dir.x = dir.x/2;
+			dir.y = dir.y/2;
 			dest = (Vector2)transform.position + dir;
 		}
 	}

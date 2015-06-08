@@ -2,31 +2,46 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Threading;
 public class Environment : MonoBehaviour {
 
 	//List of objects
 	GameObject pacman;
 	List<GameObject> pacdots;
-
+	Node solution;
 	// Use this for initialization
 	void Start () {
 		//Initialize pacman and pacdots
 		pacman = GameObject.FindGameObjectWithTag ("Pacman");
 		pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
+		solution = null;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKey(KeyCode.Space))
 		{
-			Problem p = new Problem (pacman, pacdots);
-			SearchAgent agent = new SearchAgent (p);
-			Node n = agent.DFGS ();
-			//Get nodePath
-			List<Node> path = n.Path();
-			path.OrderBy(no => no.Depth).ToList();
+			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
+			solution = agent.DFGS ();
+			if(solution != null)
+			{
+				List<Node> path = solution.Path();
+				List<Vector2> moves = new List<Vector2>();
+				foreach(Node n in path)
+				{
+					if(n.Action.HasValue)
+						moves.Add(n.Action.Value);
+				}
+				pacman.GetComponent<PacmanMove>().SetRoute(moves);
+			}
 		}
+	}
+
+	void Search(object problem)
+	{
+		//Problem p = new Problem (pacman, pacdots);
+		SearchAgent agent = new SearchAgent ((Problem)problem);
+		solution = agent.DFGS ();
 	}
 
 	bool is_done()

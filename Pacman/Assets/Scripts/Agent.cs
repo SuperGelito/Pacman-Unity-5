@@ -6,9 +6,11 @@ using System.Linq;
 public class SearchAgent
 {
 	Problem problem;
+	Node solution;
 	public SearchAgent(Problem prob)
 	{
 		problem = prob;
+		solution = null;
 	}
 
 	private Node TreeSearch(Fringe fringe)
@@ -39,6 +41,8 @@ public class SearchAgent
 		//Loop fringe to get a 
 		while (fringe.Any()) {
 			Node node = fringe.Pop ();
+			//Log information about state
+			logState(node.State);
 			if (problem.GoalTest (node.State))
 				return node;
 			if(!closed.ContainsKey(node.State))
@@ -46,6 +50,7 @@ public class SearchAgent
 				closed[node.State] = true;
 				List<Node> childNodes = node.Expand (problem);
 				childNodes.ForEach (c => fringe.Add (c));
+				logFringe(fringe);
 			}
 		}
 		return null;
@@ -53,7 +58,7 @@ public class SearchAgent
 
 	public Node DFS()
 	{
-		return TreeSearch(new LIFO());
+		return TreeSearch (new LIFO ());
 	}
 
 	public Node BFS()
@@ -70,7 +75,31 @@ public class SearchAgent
 	{
 		return GraphSearch(new FIFO());
 	}
+
+	public void logState(State state)
+	{
+		Vector2 pacmanpos = state.GetPacmanPos ();
+		int pacmanDotsLeft = state.GetNumberOfDots ();
+		Debug.Log(string.Format("Pacman position: X {0} Y {1} , dots left: {2}",pacmanpos.x.ToString(),pacmanpos.y.ToString(),pacmanDotsLeft.ToString()));
+	}
+
+	public void logFringe(Fringe fringe)
+	{
+		Debug.Log(string.Format("Number of nodes open: {0}",fringe.Count().ToString()));
+	}
+
+	public bool ProblemSolved()
+	{
+		return solution != null;
+	}
+
+	public Node GetSolution()
+	{
+		return solution;
+	}
 }
+
+
 
 public abstract class Fringe : List<Node>
 {

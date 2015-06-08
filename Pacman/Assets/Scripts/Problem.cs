@@ -79,11 +79,20 @@ public class Problem
 			foreach(string dotKey in nextDots.Keys)
 			{
 				Vector2 dotPos = nextDots[dotKey];
-				bool collision = false;
-				if((xLeft <= dotPos.x - dotRadius && xRight >= dotPos.x + dotRadius) ||
-				   (yDown <= dotPos.y - dotRadius && yUp >= dotPos.y + dotRadius))
-					collision=true;
-				if(collision)
+				//bool collision = false;
+				bool collisionx = false;
+				bool collisiony = false;
+				if((xLeft >= dotPos.x - dotRadius && xLeft <= dotPos.x + dotRadius) ||
+				   (xRight <= dotPos.x + dotRadius && xRight >= dotPos.x - dotRadius) ||
+				   xLeft <= dotPos.x - dotRadius && xRight >=dotPos.x + dotRadius)
+					collisionx=true;
+
+				if((yDown >= dotPos.y - dotRadius && yDown <= dotPos.y + dotRadius) ||
+				   (yUp <= dotPos.y + dotRadius && yUp >= dotPos.y - dotRadius) ||
+				   yDown <= dotPos.y - dotRadius && yUp >=dotPos.y + dotRadius)
+					collisiony=true;
+
+				if(collisionx && collisiony)
 					dotsToRemove.Add(dotKey);
 			}
 			foreach(string dot in dotsToRemove)
@@ -133,7 +142,7 @@ public class Node
 {
 	public State State;
 	Node Parent;
-	Vector2? Action;
+	public Vector2? Action {get;set;}
 	int Cost;
 	public int Depth;
 
@@ -193,5 +202,6 @@ public class Node
 
 		return childNodes;
 	}
+	
 }
 
