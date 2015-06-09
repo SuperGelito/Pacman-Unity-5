@@ -22,12 +22,12 @@ public class Environment : MonoBehaviour {
 		if (Input.GetKey(KeyCode.Space))
 		{
 			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
-			solution = agent.DFGS ();
+			solution = agent.BFGS ();
 			if(solution != null)
 			{
 				List<Node> path = solution.Path();
 				List<Vector2> moves = new List<Vector2>();
-				foreach(Node n in path)
+				foreach(Node n in path.OrderBy(p=>p.Depth))
 				{
 					if(n.Action.HasValue)
 						moves.Add(n.Action.Value);

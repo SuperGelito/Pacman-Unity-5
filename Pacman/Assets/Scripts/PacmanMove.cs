@@ -37,7 +37,7 @@ public class PacmanMove : MonoBehaviour {
 			{
 				Vector2 nextMov = route.First();
 				route.Remove(route.First());
-				dest=(Vector2)transform.position + nextMov;
+				Move (nextMov);
 			}
 
 			if (Input.GetKey(KeyCode.UpArrow))

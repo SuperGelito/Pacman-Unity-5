@@ -33,7 +33,7 @@ public class SearchAgent
 	private Node GraphSearch(Fringe fringe)
 	{
 		//Set the closed dictionary
-		Dictionary<State,bool> closed = new Dictionary<State,bool> ();
+		Dictionary<string,bool> closed = new Dictionary<string,bool> ();
 		//Set the initial node
 		Node initialNode = new Node (this.problem.initialState, null, null, 0);
 		//Add to the fringe
@@ -45,9 +45,9 @@ public class SearchAgent
 			logState(node.State);
 			if (problem.GoalTest (node.State))
 				return node;
-			if(!closed.ContainsKey(node.State))
+			if(!closed.ContainsKey(node.State.idState))
 			{
-				closed[node.State] = true;
+				closed[node.State.idState] = true;
 				List<Node> childNodes = node.Expand (problem);
 				childNodes.ForEach (c => fringe.Add (c));
 				logFringe(fringe);

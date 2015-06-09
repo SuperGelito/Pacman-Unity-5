@@ -53,27 +53,33 @@ public class Problem
 		//Get state pacman position
 		Vector2 pacmanPos = state.GetPacmanPos ();
 		//Get state dots
-		Dictionary<string,Vector2> dots = state.GetDots();
+		//Dictionary<string,Vector2> dots = state.GetDots();
 		//Loop movements to validate using unity collisions
 		foreach (Vector2 mov in totalMovs) {
 			//If the movement is valid is moved to valid movements
 			if(pacmanScript.valid(pacmanPos,mov))
 				validMovs.Add(mov);
 		}
-		//Calculate successor state
-		//Create intervals to check if some dot is collides with pacman
-		float xLeft = pacmanPos.x - pacmanRadius;
-		float xRight = pacmanPos.x + pacmanRadius;
-		float yDown = pacmanPos.y - pacmanRadius;
-		float yUp = pacmanPos.y + pacmanRadius;
-
 
 		//Loop valid movements to check result
 		foreach (Vector2 validMov in validMovs) {
+			//Set valid mov new values
+			Vector2 movUpdated = new Vector2();
+			movUpdated.x = validMov.x / 2;
+			movUpdated.y = validMov.y /2;
+
 			//Set next pacman state
-			Vector2 nextPacmanPos = pacmanPos + validMov;
+			Vector2 nextPacmanPos = pacmanPos + movUpdated;
+
+			//Calculate successor state
+			//Create intervals to check if some dot is collides with pacman
+			float xLeft = nextPacmanPos.x - pacmanRadius;
+			float xRight = nextPacmanPos.x + pacmanRadius;
+			float yDown = nextPacmanPos.y - pacmanRadius;
+			float yUp = nextPacmanPos.y + pacmanRadius;
+
 			//Copy dots to next state
-			Dictionary<string,Vector2> nextDots = dots;
+			Dictionary<string,Vector2> nextDots = state.GetDots();
 			//Loop dots to check collisions
 			List<string> dotsToRemove = new List<string>();
 			foreach(string dotKey in nextDots.Keys)
@@ -111,12 +117,17 @@ public class Problem
 /// </summary>
 public class State
 {
+	public string idState;
 	Vector2 pacman;
 	Dictionary<string,Vector2> dots;
 	public State(Vector2 pacmanPosition,Dictionary<string,Vector2> dotsPositions)
 	{
 		pacman = pacmanPosition;
 		dots = dotsPositions;
+		idState += pacman.ToString ();
+		foreach (string dotKey in dots.Keys) {
+			idState+=dotKey;
+		}
 	}
 	
 	public Vector2 GetPacmanPos()

@@ -1,14 +1,15 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Environment.cs">
+  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\PacmanMove.cs">
     <Files>
-      <File FileName="Assets\Scripts\Environment.cs" Line="38" Column="3" />
+      <File FileName="Assets\Scripts\Agent.cs" Line="50" Column="36" />
+      <File FileName="Assets\Scripts\Problem.cs" Line="181" Column="2" />
+      <File FileName="Assets\Scripts\Environment.cs" Line="23" Column="4" />
+      <File FileName="Assets\Scripts\PacmanMove.cs" Line="34" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches>
-    <Watch file="Assets\Scripts\PacmanMove.cs" line="48" offsetX="533" offsetY="799" expression="hit.collider" liveUpdate="False" />
-  </MonoDevelop.Ide.DebuggingService.PinnedWatches>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>
