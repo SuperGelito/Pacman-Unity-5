@@ -37,12 +37,12 @@ public class Environment : MonoBehaviour {
 		}
 	}
 
-	void Search(object problem)
+	/*void Search(object problem)
 	{
 		//Problem p = new Problem (pacman, pacdots);
 		SearchAgent agent = new SearchAgent ((Problem)problem);
 		solution = agent.DFGS ();
-	}
+	}*/
 
 	bool is_done()
 	{

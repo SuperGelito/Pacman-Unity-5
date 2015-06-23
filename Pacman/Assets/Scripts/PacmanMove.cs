@@ -13,7 +13,7 @@ public class PacmanMove : MonoBehaviour {
 	//Radious of pacman
 	public float radius = 0.9f;
 	//Distance to move per action
-	float distance = 0.45f;
+	float distance = 0.5f;
 	//Actions to move
 	List<Vector2> route;
 	#region Unity events

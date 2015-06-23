@@ -79,7 +79,12 @@ public class Problem
 			float yUp = nextPacmanPos.y + pacmanRadius;
 
 			//Copy dots to next state
-			Dictionary<string,Vector2> nextDots = state.GetDots();
+			Dictionary<string,Vector2> dots = state.GetDots();
+			Dictionary<string,Vector2> nextDots = new Dictionary<string, Vector2>();
+			foreach(string dotKey in dots.Keys)
+			{
+				nextDots.Add(dotKey,dots[dotKey]);
+			}
 			//Loop dots to check collisions
 			List<string> dotsToRemove = new List<string>();
 			foreach(string dotKey in nextDots.Keys)
@@ -126,7 +131,7 @@ public class State
 		dots = dotsPositions;
 		idState += pacman.ToString ();
 		foreach (string dotKey in dots.Keys) {
-			idState+=dotKey;
+			idState+=dotKey + "-";
 		}
 	}
 	
@@ -154,7 +159,7 @@ public class Node
 	public State State;
 	Node Parent;
 	public Vector2? Action {get;set;}
-	int Cost;
+	public int Cost;
 	public int Depth;
 
 	/// <summary>

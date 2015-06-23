@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+
 public class SearchAgent
 {
 	Problem problem;
@@ -13,7 +14,7 @@ public class SearchAgent
 		solution = null;
 	}
 
-	private Node TreeSearch(Fringe fringe)
+	private Node TreeSearch(Fringe fringe,int? limit=null)
 	{
 		//Set the initial node
 		Node initialNode = new Node (this.problem.initialState, null, null, 0);
@@ -30,7 +31,7 @@ public class SearchAgent
 		return null;
 	}
 
-	private Node GraphSearch(Fringe fringe)
+	private Node GraphSearch(Fringe fringe,int? limit=null)
 	{
 		//Set the closed dictionary
 		Dictionary<string,bool> closed = new Dictionary<string,bool> ();
@@ -49,19 +50,23 @@ public class SearchAgent
 			{
 				closed[node.State.idState] = true;
 				List<Node> childNodes = node.Expand (problem);
-				childNodes.ForEach (c => fringe.Add (c));
+				foreach(Node childNode in childNodes)
+				{
+					//if(!closed.ContainsKey(childNode.State.idState))
+						fringe.Add(childNode);
+				}
 				logFringe(fringe);
 			}
 		}
 		return null;
 	}
 
-	public Node DFS()
+	public Node DFTS()
 	{
 		return TreeSearch (new LIFO ());
 	}
 
-	public Node BFS()
+	public Node BFTS()
 	{
 		return TreeSearch(new FIFO());
 	}
@@ -74,6 +79,95 @@ public class SearchAgent
 	public Node BFGS()
 	{
 		return GraphSearch(new FIFO());
+	}
+
+	public Node UCTS()
+	{
+		return TreeSearch (new PriorityG ());
+	}
+
+	public Node UCGS()
+	{
+		return TreeSearch (new PriorityG ());
+	}
+
+	public Node DLTS(Problem problem,int limit)
+	{
+		return RDLTS (new Node (this.problem.initialState, null, null, 0), problem, limit);
+	}
+
+	public Node RDLTS(Node node,Problem problem,int limit)
+	{
+		//bool cutoffOcurred = false;
+		if (problem.GoalTest (node.State))
+			return node;
+		else if (node.Depth == limit)
+			return null;
+		else {
+			foreach(Node successor in node.Expand(problem))
+			{
+				Node result = RDLTS(successor,problem,limit);
+
+				if(result != null)
+					return result;
+			}
+			return null;
+		}
+
+	}
+
+	public Node IDTS(Problem problem,int limit)
+	{
+		Node result=null;
+		for(int i=1;i<=limit;i++)
+		{
+			result = DLTS(problem,i);
+			if(result != null)
+				return result;
+		}
+		return result;
+	}
+
+	public Node DLGS(Problem problem,int limit)
+	{
+		Dictionary<string,bool> closed = new Dictionary<string,bool> ();
+		return RDLGS (new Node (this.problem.initialState, null, null, 0), problem, limit,ref closed);
+	}
+	
+	public Node RDLGS(Node node,Problem problem,int limit,ref Dictionary<string,bool> closed)
+	{
+		//bool cutoffOcurred = false;
+		if (problem.GoalTest (node.State))
+			return node;
+		else if (node.Depth == limit)
+			return null;
+		else {
+			if(!closed.ContainsKey(node.State.idState))
+			{
+			closed[node.State.idState] = true;
+			foreach(Node successor in node.Expand(problem))
+			{
+				Node result = RDLGS(successor,problem,limit,ref closed);
+				
+				if(result != null)
+					return result;
+				}
+			}
+			return null;
+		}
+		
+	}
+	
+	public Node IDGS(Problem problem,int limit)
+	{
+		Node result=null;
+		for(int i=1;i<=limit;i++)
+		{
+			result = DLTS(problem,i);
+			if(result != null)
+				return result;
+		}
+		return result;
 	}
 
 	public void logState(State state)
@@ -105,7 +199,9 @@ public abstract class Fringe : List<Node>
 {
 	public abstract Node Pop ();
 }
-
+/// <summary>
+/// Return Last IN First OUT
+/// </summary>
 public class LIFO: Fringe{
 	public override Node Pop()
 	{
@@ -114,11 +210,25 @@ public class LIFO: Fringe{
 		return ret;
 	}
 }
-
+/// <summary>
+/// Return First IN First Out
+/// </summary>
 public class FIFO: Fringe{
 	public override Node Pop()
 	{
 		Node ret = this.First();
+		this.Remove (ret);
+		return ret;
+	}
+}
+
+/// <summary>
+/// Return node with less cost
+/// </summary>
+public class PriorityG: Fringe{
+	public override Node Pop()
+	{
+		Node ret = this.OrderBy(n=>n.Cost).First();
 		this.Remove (ret);
 		return ret;
 	}
