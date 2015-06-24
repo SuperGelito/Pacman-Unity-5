@@ -13,7 +13,12 @@ public class SearchAgent
 		problem = prob;
 		solution = null;
 	}
-
+	/// <summary>
+	/// Tree limited/unlimited search, does not open previously opened states
+	/// </summary>
+	/// <returns>Node with a goal</returns>
+	/// <param name="fringe">States to begin with search</param>
+	/// <param name="limit">optional parameter to set a limit in search and avoid infinite state spaces</param>
 	private Node TreeSearch(Fringe fringe,int? limit=null)
 	{
 		//Set the initial node
@@ -25,12 +30,21 @@ public class SearchAgent
 			Node node = fringe.Pop ();
 			if (problem.GoalTest (node.State))
 				return node;
-			List<Node> childNodes = node.Expand (problem);
-			childNodes.ForEach (c => fringe.Add (c));
+			if(!limit.HasValue &&(limit.HasValue && node.Depth < limit))
+			{
+				List<Node> childNodes = node.Expand (problem);
+				childNodes.ForEach (c => fringe.Add (c));
+			}
 		}
 		return null;
 	}
 
+	/// <summary>
+	/// Graph limited/unlimited search, open previously opened states
+	/// </summary>
+	/// <returns>Node with a goal</returns>
+	/// <param name="fringe">States to begin with search</param>
+	/// <param name="limit">optional parameter to set a limit in search and avoid infinite state spaces</param>
 	private Node GraphSearch(Fringe fringe,int? limit=null)
 	{
 		//Set the closed dictionary
@@ -49,53 +63,77 @@ public class SearchAgent
 			if(!closed.ContainsKey(node.State.idState))
 			{
 				closed[node.State.idState] = true;
-				List<Node> childNodes = node.Expand (problem);
-				foreach(Node childNode in childNodes)
+				if(!limit.HasValue &&(limit.HasValue && node.Depth < limit))
 				{
-					//if(!closed.ContainsKey(childNode.State.idState))
-						fringe.Add(childNode);
+						List<Node> childNodes = node.Expand (problem);
+						foreach(Node childNode in childNodes)
+						{
+							fringe.Add(childNode);
+						}
+						logFringe(fringe);
 				}
-				logFringe(fringe);
 			}
 		}
 		return null;
 	}
-
+	/// <summary>
+	/// Depth first Tree Search
+	/// </summary>
 	public Node DFTS()
 	{
 		return TreeSearch (new LIFO ());
 	}
-
+	/// <summary>
+	/// Breadth first Tree search
+	/// </summary>
 	public Node BFTS()
 	{
 		return TreeSearch(new FIFO());
 	}
-
+	/// <summary>
+	/// Depth first Graph Search
+	/// </summary>
 	public Node DFGS()
 	{
 		return GraphSearch(new LIFO());
 	}
-	
+	/// <summary>
+	/// Breadth first Graph search
+	/// </summary>
 	public Node BFGS()
 	{
 		return GraphSearch(new FIFO());
 	}
-
+	/// <summary>
+	/// Uniform Cost Tree Search
+	/// </summary>
 	public Node UCTS()
 	{
-		return TreeSearch (new PriorityG ());
+		return TreeSearch (new PriorityCost ());
 	}
-
+	/// <summary>
+	/// Uniform Cost Graph Search
+	/// </summary>
 	public Node UCGS()
 	{
-		return TreeSearch (new PriorityG ());
+		return TreeSearch (new PriorityCost ());
 	}
 
+	/// <summary>
+	/// Depth limited tree search, search with an incremental depth limit
+	/// </summary>
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="limit">limit to apply to recursive algorithm</param>
 	public Node DLTS(Problem problem,int limit)
 	{
 		return RDLTS (new Node (this.problem.initialState, null, null, 0), problem, limit);
 	}
-
+	/// <summary>
+	/// Recursive Depth Limited tree search until depth limit is reached, every node is used as first node in search
+	/// </summary>
+	/// <param name="node">Node used to begin with search</param> 
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="limit">limit to stop expanding nodes</param>
 	public Node RDLTS(Node node,Problem problem,int limit)
 	{
 		//bool cutoffOcurred = false;
@@ -115,11 +153,15 @@ public class SearchAgent
 		}
 
 	}
-
-	public Node IDTS(Problem problem,int limit)
+	/// <summary>
+	/// Iterative Depth limited tree search, search with an incremental depth limit until limit is reached or solution is found
+	/// </summary>
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="maxlimit">maximum limit to apply to recursive algorithm</param>
+	public Node IDTS(Problem problem,int maxlimit)
 	{
 		Node result=null;
-		for(int i=1;i<=limit;i++)
+		for(int i=1;i<=maxlimit;i++)
 		{
 			result = DLTS(problem,i);
 			if(result != null)
@@ -225,7 +267,7 @@ public class FIFO: Fringe{
 /// <summary>
 /// Return node with less cost
 /// </summary>
-public class PriorityG: Fringe{
+public class PriorityCost: Fringe{
 	public override Node Pop()
 	{
 		Node ret = this.OrderBy(n=>n.Cost).First();
@@ -234,5 +276,39 @@ public class PriorityG: Fringe{
 	}
 }
 
+public class PriorityHeurTree: Fringe{
+	public override Node Pop()
+	{
+		Node ret = this.OrderBy(n=>n.HeurTree).First();
+		this.Remove (ret);
+		return ret;
+	}
+}
 
+public class PriorityHeurGraph: Fringe{
+	public override Node Pop()
+	{
+		Node ret = this.OrderBy(n=>n.HeurGraph).First();
+		this.Remove (ret);
+		return ret;
+	}
+}
+
+public class PriorityCostHeurTree: Fringe{
+	public override Node Pop()
+	{
+		Node ret = this.OrderBy(n=>n.Cost).First();
+		this.Remove (ret);
+		return ret;
+	}
+}
+
+public class PriorityCostHeurGraph: Fringe{
+	public override Node Pop()
+	{
+		Node ret = this.OrderBy(n=>n.Cost).First();
+		this.Remove (ret);
+		return ret;
+	}
+}
 

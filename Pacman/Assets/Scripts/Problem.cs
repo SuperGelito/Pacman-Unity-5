@@ -39,6 +39,17 @@ public class Problem
 	{
 		return 1;
 	}
+	//Heuristic
+	public int HeurTree(State dest)
+	{
+
+	}
+
+	//Heuristic
+	public int HeurGraph(State dest)
+	{
+		
+	}
 
 	//Successor
 	public List<KeyValuePair<Vector2,State>> Successor(State state)
@@ -160,6 +171,14 @@ public class Node
 	Node Parent;
 	public Vector2? Action {get;set;}
 	public int Cost;
+	public int HeurTree;
+	public int CostHeurTree{
+		get{ return this.Cost + this.HeurTree;}
+	}
+	public int HeurGraph;
+	public int CostHeurGraph{
+		get{ return this.Cost + this.HeurGraph;}
+	}
 	public int Depth;
 
 	/// <summary>
@@ -169,11 +188,14 @@ public class Node
 	/// <param name="Parent">Parent node of this node</param>
 	/// <param name="action">Action vector2 direction that generated the node</param>
 	/// <param name="cost">Cost of execute action from parent node</param>
-	public Node(State state,Node parent,Vector2? action,int cost){
+	public Node(State state,Node parent,Vector2? action,int cost,int heurTree=0,int heurGraph=0){
 		this.State = state;
 		this.Parent = parent;
 		this.Action = action;
 		this.Cost = cost;
+		this.HeurTree = heurTree;
+		this.HeurGraph = heurGraph;
+		//this.CostHeur = this.Cost + this.Heur;
 		if (parent != null)
 			this.Depth = parent.Depth + 1;
 		else
