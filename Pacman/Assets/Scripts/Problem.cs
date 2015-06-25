@@ -39,16 +39,17 @@ public class Problem
 	{
 		return 1;
 	}
+
 	//Heuristic
 	public int HeurTree(State dest)
 	{
-
+		return dest.GetDots ().Count;
 	}
 
 	//Heuristic
 	public int HeurGraph(State dest)
 	{
-		
+		return 0;
 	}
 
 	//Successor
@@ -171,13 +172,20 @@ public class Node
 	Node Parent;
 	public Vector2? Action {get;set;}
 	public int Cost;
+	public int CostAcumulated;
 	public int HeurTree;
 	public int CostHeurTree{
 		get{ return this.Cost + this.HeurTree;}
 	}
+	public int CostAcumulatedHeurTree{
+		get{ return this.CostAcumulated + this.HeurTree;}
+	}
 	public int HeurGraph;
 	public int CostHeurGraph{
 		get{ return this.Cost + this.HeurGraph;}
+	}
+	public int CostAcumulatedHeurGraph{
+		get{ return this.CostAcumulated + this.HeurGraph;}
 	}
 	public int Depth;
 
@@ -193,6 +201,7 @@ public class Node
 		this.Parent = parent;
 		this.Action = action;
 		this.Cost = cost;
+		this.CostAcumulated = cost + (parent == null ? 0 : parent.CostAcumulated);
 		this.HeurTree = heurTree;
 		this.HeurGraph = heurGraph;
 		//this.CostHeur = this.Cost + this.Heur;
@@ -233,9 +242,11 @@ public class Node
 			Vector2 action = successor.Key;
 			State destination = successor.Value;
 			int cost = prob.PathCost(this.State,successor.Key,successor.Value);
+			int heurtree = prob.HeurTree(destination);
+			int heurgraph = prob.HeurGraph(destination);
 			Node parent = this;
 
-			childNodes.Add(new Node(destination,this,action,cost));
+			childNodes.Add(new Node(destination,this,action,cost,heurtree,heurgraph));
 		}
 
 		return childNodes;

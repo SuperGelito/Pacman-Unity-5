@@ -30,7 +30,7 @@ public class SearchAgent
 			Node node = fringe.Pop ();
 			if (problem.GoalTest (node.State))
 				return node;
-			if(!limit.HasValue &&(limit.HasValue && node.Depth < limit))
+			if(!limit.HasValue || (limit.HasValue && node.Depth < limit))
 			{
 				List<Node> childNodes = node.Expand (problem);
 				childNodes.ForEach (c => fringe.Add (c));
@@ -63,7 +63,7 @@ public class SearchAgent
 			if(!closed.ContainsKey(node.State.idState))
 			{
 				closed[node.State.idState] = true;
-				if(!limit.HasValue &&(limit.HasValue && node.Depth < limit))
+				if(!limit.HasValue || (limit.HasValue && node.Depth < limit))
 				{
 						List<Node> childNodes = node.Expand (problem);
 						foreach(Node childNode in childNodes)
@@ -116,7 +116,7 @@ public class SearchAgent
 	/// </summary>
 	public Node UCGS()
 	{
-		return TreeSearch (new PriorityCost ());
+		return GraphSearch (new PriorityCost ());
 	}
 
 	/// <summary>
@@ -170,12 +170,23 @@ public class SearchAgent
 		return result;
 	}
 
+	/// <summary>
+	/// Depth limited graph search, search with an incremental depth limit
+	/// </summary>
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="limit">limit to apply to recursive algorithm</param>
 	public Node DLGS(Problem problem,int limit)
 	{
 		Dictionary<string,bool> closed = new Dictionary<string,bool> ();
 		return RDLGS (new Node (this.problem.initialState, null, null, 0), problem, limit,ref closed);
 	}
-	
+
+	/// <summary>
+	/// Recursive Depth Limited graph search until depth limit is reached, every node is used as first node in search
+	/// </summary>
+	/// <param name="node">Node used to begin with search</param> 
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="limit">limit to stop expanding nodes</param>
 	public Node RDLGS(Node node,Problem problem,int limit,ref Dictionary<string,bool> closed)
 	{
 		//bool cutoffOcurred = false;
@@ -199,7 +210,11 @@ public class SearchAgent
 		}
 		
 	}
-	
+	/// <summary>
+	/// Iterative Depth limited graph search, search with an incremental depth limit until limit is reached or solution is found
+	/// </summary>
+	/// <param name="problem">Problem to search in</param>
+	/// <param name="maxlimit">maximum limit to apply to recursive algorithm</param>
 	public Node IDGS(Problem problem,int limit)
 	{
 		Node result=null;
@@ -210,6 +225,21 @@ public class SearchAgent
 				return result;
 		}
 		return result;
+	}
+
+	/// <summary>
+	/// A* Tree Search
+	/// </summary>
+	public Node AstarTS()
+	{
+		return TreeSearch (new PriorityCostAcumulatedHeurTree ());
+	}
+	/// <summary>
+	/// A* Graph Search
+	/// </summary>
+	public Node AstarGS()
+	{
+		return GraphSearch (new PriorityCostAcumulatedHeurGraph ());
 	}
 
 	public void logState(State state)
@@ -294,19 +324,19 @@ public class PriorityHeurGraph: Fringe{
 	}
 }
 
-public class PriorityCostHeurTree: Fringe{
+public class PriorityCostAcumulatedHeurTree: Fringe{
 	public override Node Pop()
 	{
-		Node ret = this.OrderBy(n=>n.Cost).First();
+		Node ret = this.OrderBy(n=>n.CostAcumulatedHeurTree).First();
 		this.Remove (ret);
 		return ret;
 	}
 }
 
-public class PriorityCostHeurGraph: Fringe{
+public class PriorityCostAcumulatedHeurGraph: Fringe{
 	public override Node Pop()
 	{
-		Node ret = this.OrderBy(n=>n.Cost).First();
+		Node ret = this.OrderBy(n=>n.CostAcumulatedHeurTree).First();
 		this.Remove (ret);
 		return ret;
 	}
