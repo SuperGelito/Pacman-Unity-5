@@ -22,7 +22,7 @@ public class Environment : MonoBehaviour {
 		if (Input.GetKey(KeyCode.Space))
 		{
 			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
-			solution = agent.AstarTS ();
+			solution = agent.AstarGS ();
 			if(solution != null)
 			{
 				List<Node> path = solution.Path();

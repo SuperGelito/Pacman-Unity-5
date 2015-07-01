@@ -336,7 +336,7 @@ public class PriorityCostAcumulatedHeurTree: Fringe{
 public class PriorityCostAcumulatedHeurGraph: Fringe{
 	public override Node Pop()
 	{
-		Node ret = this.OrderBy(n=>n.CostAcumulatedHeurTree).First();
+		Node ret = this.OrderBy(n=>n.CostAcumulatedHeurGraph).First();
 		this.Remove (ret);
 		return ret;
 	}

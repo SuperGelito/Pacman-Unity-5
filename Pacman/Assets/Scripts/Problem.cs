@@ -49,7 +49,25 @@ public class Problem
 	//Heuristic
 	public int HeurGraph(State dest)
 	{
-		return 0;
+		//Get the number of dots and handle them with higher weight
+		int numberDots = dest.GetNumberOfDots ();
+		numberDots *= 1000;
+		//loop number of dots to ensure nearest dot
+		string nearestDot = string.Empty;
+		int nearestPositionCount = 1000;
+		Vector2 pacmanPos = dest.GetPacmanPos ();
+		foreach(var dot in dest.GetDots())
+		{
+			int dotPositionCount = (int)(Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y)) * 10;
+			//Get total amount of difference
+			if(dotPositionCount < nearestPositionCount)
+			{
+				nearestPositionCount = dotPositionCount;
+				nearestDot = dot.Key;
+			}
+		}
+
+		return numberDots + nearestPositionCount;
 	}
 
 	//Successor
