@@ -19,8 +19,10 @@ public class Environment : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (Input.GetKey(KeyCode.Space))
+		if (Input.GetKey(KeyCode.S))
 		{
+			pacman = GameObject.FindGameObjectWithTag ("Pacman");
+			pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
 			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
 			solution = agent.AstarGS ();
 			if(solution != null)
