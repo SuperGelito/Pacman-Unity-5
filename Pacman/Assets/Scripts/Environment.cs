@@ -7,22 +7,25 @@ public class Environment : MonoBehaviour {
 
 	//List of objects
 	GameObject pacman;
-	List<GameObject> pacdots;
+	//List<GameObject> pacdots;
 	Node solution;
+	bool reflexMode;
+	//ReflextAgent reflexAgent;
 	// Use this for initialization
 	void Start () {
-		//Initialize pacman and pacdots
+		//Initialize pacman
 		pacman = GameObject.FindGameObjectWithTag ("Pacman");
-		pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
+		//pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
 		solution = null;
+		//reflexAgent = null;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKey(KeyCode.S))
 		{
-			pacman = GameObject.FindGameObjectWithTag ("Pacman");
-			pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
+			Dictionary<string,object> percepts = Percept(pacman);
+			List<GameObject> pacdots = (List<GameObject>)percepts["Pacdot"];
 			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
 			solution = agent.AstarGS ();
 			if(solution != null)
@@ -35,6 +38,23 @@ public class Environment : MonoBehaviour {
 						moves.Add(n.Action.Value);
 				}
 				pacman.GetComponent<PacmanMove>().SetRoute(moves);
+			}
+		}
+		if (Input.GetKey (KeyCode.R)) {
+			reflexMode = !reflexMode;
+		}
+		if (reflexMode) {
+			if(!pacman.GetComponent<PacmanMove>().isMoving)
+			{
+				Dictionary<string,object> percepts = Percept(pacman);
+				List<GameObject> pacdots = (List<GameObject>)percepts["Pacdot"];
+				Problem prob = new Problem(pacman,pacdots);
+				ReflextAgent reflexAgent = new ReflextAgent(prob);
+				Node nextNode = reflexAgent.GetNextNode();
+				if(nextNode!=null)
+				{
+					ExecuteActionPacman(pacman,nextNode.Action.Value);
+				}
 			}
 		}
 	}
@@ -53,12 +73,14 @@ public class Environment : MonoBehaviour {
 	}
 
 	//Perceptions that an agent get from environment
-	/*Dictionary<string,Object> Percept(GameObject agent){
-		Dictionary<string,Object> percepts = new Dictionary<string, Object> ();
-		percepts.Add ("Pacman", pacman);
+	Dictionary<string,object> Percept(GameObject agent){
+		pacman = GameObject.FindGameObjectWithTag ("Pacman");
+		List<GameObject> pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
+		Dictionary<string,object> percepts = new Dictionary<string, object> ();
+		//percepts.Add ("Pacman", pacman);
 		percepts.Add ("Pacdot", pacdots);
 		return percepts;
-	}*/
+	}
 
 	//Execute action
 	void ExecuteActionPacman(GameObject agent,Vector2 action)

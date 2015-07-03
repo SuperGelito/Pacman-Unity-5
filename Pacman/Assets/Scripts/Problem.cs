@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Problem
 {
@@ -51,14 +52,16 @@ public class Problem
 	{
 		//Get the number of dots and handle them with higher weight
 		int numberDots = dest.GetNumberOfDots ();
-		numberDots *= 1000;
+		//numberDots *= 1000;
+		int weightNumberDots = 1000;
+		int weightNearestDot = 10;
 		//loop number of dots to ensure nearest dot
 		string nearestDot = string.Empty;
 		int nearestPositionCount = 1000;
 		Vector2 pacmanPos = dest.GetPacmanPos ();
 		foreach(var dot in dest.GetDots())
 		{
-			int dotPositionCount = (int)(Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y)) * 10;
+			int dotPositionCount = (int)(Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y)) * weightNearestDot;
 			//Get total amount of difference
 			if(dotPositionCount < nearestPositionCount)
 			{
@@ -67,7 +70,35 @@ public class Problem
 			}
 		}
 
-		return numberDots + nearestPositionCount;
+
+		return numberDots * weightNumberDots + nearestPositionCount;
+	}
+
+	//Utility function
+	public double Utility(State dest)
+	{
+		int weightNumberDots = 100;
+		int weightDistance = 1;
+		//Get the number of dots and handle them with higher weight
+		int numberDots = dest.GetNumberOfDots ();
+
+		//loop number of dots to ensure nearest dot
+		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
+		Vector2 pacmanPos = dest.GetPacmanPos ();
+		foreach(var dot in dest.GetDots())
+		{
+			double dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
+			dotsDistanceList.Add(new KeyValuePair<string,double>(dot.Key,dotDistance));
+		}
+
+		double distancePoints = 0;
+		int countWeight = 1;
+		foreach (var dot in dotsDistanceList.OrderBy(d=>d.Value)) {
+			distancePoints = distancePoints + dot.Value/countWeight;
+			countWeight++;
+		}
+		
+		return numberDots * weightNumberDots + distancePoints * weightDistance;
 	}
 
 	//Successor
@@ -205,6 +236,7 @@ public class Node
 	public int CostAcumulatedHeurGraph{
 		get{ return this.CostAcumulated + this.HeurGraph;}
 	}
+	public double Utility;
 	public int Depth;
 
 	/// <summary>
@@ -214,7 +246,7 @@ public class Node
 	/// <param name="Parent">Parent node of this node</param>
 	/// <param name="action">Action vector2 direction that generated the node</param>
 	/// <param name="cost">Cost of execute action from parent node</param>
-	public Node(State state,Node parent,Vector2? action,int cost,int heurTree=0,int heurGraph=0){
+	public Node(State state,Node parent,Vector2? action,int cost,int heurTree=0,int heurGraph=0,double utility=0){
 		this.State = state;
 		this.Parent = parent;
 		this.Action = action;
@@ -222,6 +254,7 @@ public class Node
 		this.CostAcumulated = cost + (parent == null ? 0 : parent.CostAcumulated);
 		this.HeurTree = heurTree;
 		this.HeurGraph = heurGraph;
+		this.Utility = utility;
 		//this.CostHeur = this.Cost + this.Heur;
 		if (parent != null)
 			this.Depth = parent.Depth + 1;
@@ -262,9 +295,10 @@ public class Node
 			int cost = prob.PathCost(this.State,successor.Key,successor.Value);
 			int heurtree = prob.HeurTree(destination);
 			int heurgraph = prob.HeurGraph(destination);
+			double utility = prob.Utility(destination);
 			Node parent = this;
 
-			childNodes.Add(new Node(destination,this,action,cost,heurtree,heurgraph));
+			childNodes.Add(new Node(destination,this,action,cost,heurtree,heurgraph,utility));
 		}
 
 		return childNodes;

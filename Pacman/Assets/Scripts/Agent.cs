@@ -265,6 +265,28 @@ public class SearchAgent
 	}
 }
 
+public class ReflextAgent
+{
+	Problem problem;
+	Node CurrentNode;
+	public ReflextAgent(Problem prob)
+	{
+		problem = prob;
+		CurrentNode = new Node (this.problem.initialState, null, null, 0);
+	}
+	
+	public Node GetNextNode()
+	{
+		if (!problem.GoalTest (CurrentNode.State)) {
+			List<Node> successors = CurrentNode.Expand (problem);
+			PriorityUtility listOfSuccessors = new PriorityUtility (MiniMax.Min,successors);
+			return listOfSuccessors.Pop ();
+		}
+		else
+		return null;
+		}
+	
+}
 
 
 public abstract class Fringe : List<Node>
@@ -342,3 +364,33 @@ public class PriorityCostAcumulatedHeurGraph: Fringe{
 	}
 }
 
+public class PriorityUtility: Fringe{
+	MiniMax Order;
+	public PriorityUtility(MiniMax order)
+	{
+		Order = order;
+	}
+	public PriorityUtility(MiniMax order,List<Node> source)
+	{
+		foreach (Node node in source) {
+			this.Add(node);
+		}
+		Order = order;
+	}
+	public override Node Pop()
+	{
+		Node ret;
+		if (Order == MiniMax.Min) {
+			ret = this.OrderBy (n => n.Utility).First ();
+		} else {
+			ret = this.OrderByDescending (n => n.Utility).First ();
+		}
+		this.Remove (ret);
+		return ret;
+	}
+}
+
+public enum MiniMax{
+	Min,
+	Max
+}

@@ -8,6 +8,8 @@ public class PacmanMove : MonoBehaviour {
 	public float speed = 0.4f;
 	//Is alive
 	public bool isAlive;
+	//Is Moving
+	public bool isMoving;
 	//Destination position
 	Vector2 dest = Vector2.zero;
 	//Radious of pacman
@@ -32,25 +34,27 @@ public class PacmanMove : MonoBehaviour {
 
 		// Check for Input if not moving
 		if ((Vector2)transform.position == dest) {
+			//Is not moving
+			isMoving=false;
 			//Check for action to move
-			if(route.Any())
-			{
-				Vector2 nextMov = route.First();
-				route.Remove(route.First());
+			if (route.Any ()) {
+				Vector2 nextMov = route.First ();
+				route.Remove (route.First ());
 				Move (nextMov);
 			}
 
-			if (Input.GetKey(KeyCode.UpArrow))
-				Move(Vector2.up);
-			if (Input.GetKey(KeyCode.RightArrow))
-				Move(Vector2.right);
-			if (Input.GetKey(KeyCode.DownArrow))
-				Move(-Vector2.up);
-			if (Input.GetKey(KeyCode.LeftArrow))
-				Move(-Vector2.right);
+			if (Input.GetKey (KeyCode.UpArrow))
+				Move (Vector2.up);
+			if (Input.GetKey (KeyCode.RightArrow))
+				Move (Vector2.right);
+			if (Input.GetKey (KeyCode.DownArrow))
+				Move (-Vector2.up);
+			if (Input.GetKey (KeyCode.LeftArrow))
+				Move (-Vector2.right);
 			 
+		} else {
+			isMoving=true;
 		}
-
 		//Check for animation to be used
 		// Animation Parameters
 		Vector2 dir = dest - (Vector2)transform.position;
