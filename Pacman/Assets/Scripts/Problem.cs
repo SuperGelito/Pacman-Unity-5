@@ -77,25 +77,51 @@ public class Problem
 	//Utility function
 	public double Utility(State dest)
 	{
-		int weightNumberDots = 100;
+		int weightNumberDots = 1000;
 		int weightDistance = 1;
+		//int weightwallcorner = 10;
+
+		int wallpenalty = 100;
+		int weightAngleWall = 5;
 		//Get the number of dots and handle them with higher weight
 		int numberDots = dest.GetNumberOfDots ();
 
 		//loop number of dots to ensure nearest dot
 		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
 		Vector2 pacmanPos = dest.GetPacmanPos ();
-		foreach(var dot in dest.GetDots())
+		Dictionary<string, Vector2> destDots = dest.GetDots ();
+		foreach(var dot in destDots)
 		{
 			double dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
+			//double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
 			dotsDistanceList.Add(new KeyValuePair<string,double>(dot.Key,dotDistance));
 		}
 
 		double distancePoints = 0;
-		int countWeight = 1;
-		foreach (var dot in dotsDistanceList.OrderBy(d=>d.Value)) {
-			distancePoints = distancePoints + dot.Value/countWeight;
-			countWeight++;
+		//int countWeight = 1;
+		foreach (var dot in dotsDistanceList.OrderBy(d=>d.Value).Take(1)) {
+			double grossDistance = dot.Value;
+			//Get dot position
+			Vector2 dotPos = destDots[dot.Key];
+			//Validate if there are some wall between pacman position and dot
+			Collider2D wall;
+			if(!pacmanScript.validLine(pacmanPos,dotPos,out wall))
+			{
+				//If there exists any wall between them this dot is penalized
+				grossDistance += wallpenalty;
+				//grossDistance = wallpenalty;
+				//Get angle between pacman pos and dot, so use the x as axis and the dot direction
+				Vector2 vectorToGetAngle = new Vector2(dotPos.x-pacmanPos.x,dotPos.y-pacmanPos.y);
+				float angle = Vector2.Angle(Vector2.up,vectorToGetAngle);
+				if(vectorToGetAngle.x < 0)
+				{
+					angle = 360 - angle;
+				}
+				grossDistance -= angle / weightAngleWall;
+			}
+			distancePoints += grossDistance;
+			//distancePoints += dot.Value/countWeight;
+			//countWeight++;
 		}
 		
 		return numberDots * weightNumberDots + distancePoints * weightDistance;
@@ -118,7 +144,7 @@ public class Problem
 		//Loop movements to validate using unity collisions
 		foreach (Vector2 mov in totalMovs) {
 			//If the movement is valid is moved to valid movements
-			if(pacmanScript.valid(pacmanPos,mov))
+			if(pacmanScript.validCircle(pacmanPos,mov))
 				validMovs.Add(mov);
 		}
 

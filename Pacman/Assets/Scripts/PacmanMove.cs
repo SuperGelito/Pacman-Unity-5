@@ -74,13 +74,13 @@ public class PacmanMove : MonoBehaviour {
 		return movs;
 	}
 
-	bool valid(Vector2 dir) {
+	bool validCircle(Vector2 dir) {
 		// Cast Line from 'next to Pac-Man' to 'Pac-Man'
 		Vector2 pos = transform.position;
-		return valid (pos, dir);
+		return validCircle (pos, dir);
 	}
 
-	public bool valid(Vector2 pos,Vector2 dir)
+	public bool validCircle(Vector2 pos,Vector2 dir)
 	{
 		//Mask of bytes representing 8, if more collision layer needed use 1 << 8 || 1 << 6
 		int mask = 1 << 8;
@@ -90,6 +90,14 @@ public class PacmanMove : MonoBehaviour {
 		return (hit.collider == null);
 	}
 
+	public bool validLine(Vector2 pos,Vector2 dest, out Collider2D wall)
+	{
+		int mask = 1 << 8;
+		RaycastHit2D hit = Physics2D.Linecast(pos,dest,mask);
+		wall = hit.collider;
+		return (wall == null);
+	}
+
 	public void SetRoute(List<Vector2> route)
 	{
 		this.route = route;
@@ -97,7 +105,7 @@ public class PacmanMove : MonoBehaviour {
 
 	public void Move(Vector2 dir)
 	{
-		if (valid (dir)) {
+		if (validCircle (dir)) {
 			dir.x = dir.x/2;
 			dir.y = dir.y/2;
 			dest = (Vector2)transform.position + dir;
