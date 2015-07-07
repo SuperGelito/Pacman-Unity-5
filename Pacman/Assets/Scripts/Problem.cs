@@ -82,7 +82,7 @@ public class Problem
 		//int weightwallcorner = 10;
 
 		int wallpenalty = 100;
-		int weightAngleWall = 5;
+		int weightAngleWall = 3;
 		//Get the number of dots and handle them with higher weight
 		int numberDots = dest.GetNumberOfDots ();
 
@@ -104,27 +104,65 @@ public class Problem
 			//Get dot position
 			Vector2 dotPos = destDots[dot.Key];
 			//Validate if there are some wall between pacman position and dot
-			Collider2D wall;
-			if(!pacmanScript.validLine(pacmanPos,dotPos,out wall))
+			RaycastHit2D wallImpact;
+			if(!pacmanScript.validLine(pacmanPos,dotPos,out wallImpact))
 			{
 				//If there exists any wall between them this dot is penalized
 				grossDistance += wallpenalty;
-				//grossDistance = wallpenalty;
-				//Get angle between pacman pos and dot, so use the x as axis and the dot direction
-				Vector2 vectorToGetAngle = new Vector2(dotPos.x-pacmanPos.x,dotPos.y-pacmanPos.y);
-				float angle = Vector2.Angle(Vector2.up,vectorToGetAngle);
-				if(vectorToGetAngle.x < 0)
+				if(wallImpact.distance <=2)
 				{
-					angle = 360 - angle;
+					//Get base angle to compare
+					Vector2 baseAngle = GetBaseAngleForCompare(wallImpact);
+					//Get angle between pacman pos and dot, so use the x as axis and the dot direction
+					Vector2 vectorToGetAngle = new Vector2(wallImpact.collider.offset.x-pacmanPos.x,wallImpact.collider.offset.y-pacmanPos.y);
+
+					float angle = Vector2.Angle(baseAngle,vectorToGetAngle);
+
+					grossDistance -= angle / weightAngleWall;
 				}
-				grossDistance -= angle / weightAngleWall;
 			}
-			distancePoints += grossDistance;
+ 			distancePoints += grossDistance;
 			//distancePoints += dot.Value/countWeight;
 			//countWeight++;
 		}
 		
 		return numberDots * weightNumberDots + distancePoints * weightDistance;
+	}
+
+	public Vector2 GetBaseAngleForCompare(RaycastHit2D wallImpact)
+	{
+		Vector2 baseAngle = Vector2.up;
+		BoxCollider2D wall = (BoxCollider2D)wallImpact.collider;
+		Vector2 wallCenter = wall.offset;
+		Vector2 impactPoint = wallImpact.point;
+		float yMax = wallCenter.y + wall.size.y / 2;
+		float yMin = wallCenter.y - wall.size.y / 2;
+
+		//if x is lower collision comes from left
+		if (impactPoint.x < wallCenter.x) {
+			if(impactPoint.y == yMax || impactPoint.y == yMin)
+				baseAngle = Vector2.right;
+			else
+			{
+				if(impactPoint.y > wallCenter.y)
+					baseAngle = Vector2.up * -1;
+				else if(impactPoint.y < wallCenter.y)
+					baseAngle = Vector2.up;
+			}
+		} else {
+		//if not impact comes from right
+			if(impactPoint.y == yMax || impactPoint.y == yMin)
+				baseAngle = Vector2.right  *-1;
+			else
+			{
+				if(impactPoint.y > wallCenter.y)
+					baseAngle = Vector2.up * -1;
+				else if(impactPoint.y < wallCenter.y)
+					baseAngle = Vector2.up;
+			}
+		}
+
+		return baseAngle;
 	}
 
 	//Successor

@@ -90,12 +90,12 @@ public class PacmanMove : MonoBehaviour {
 		return (hit.collider == null);
 	}
 
-	public bool validLine(Vector2 pos,Vector2 dest, out Collider2D wall)
+	public bool validLine(Vector2 pos,Vector2 dest, out RaycastHit2D wallImpact)
 	{
 		int mask = 1 << 8;
 		RaycastHit2D hit = Physics2D.Linecast(pos,dest,mask);
-		wall = hit.collider;
-		return (wall == null);
+		wallImpact = hit;
+		return (hit.collider == null);
 	}
 
 	public void SetRoute(List<Vector2> route)
