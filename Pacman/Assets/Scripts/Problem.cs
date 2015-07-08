@@ -75,58 +75,73 @@ public class Problem
 	}
 
 	//Utility function
-	public double Utility(State dest)
+	public double Utility(State dest,KeyValuePair<string,double>? prevNearestDot)
 	{
 		int weightNumberDots = 1000;
 		int weightDistance = 1;
 		//int weightwallcorner = 10;
 
 		int wallpenalty = 100;
-		int weightAngleWall = 3;
+		int weightAngleWall = 8;
 		//Get the number of dots and handle them with higher weight
 		int numberDots = dest.GetNumberOfDots ();
 
-		//loop number of dots to ensure nearest dot
-		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
+		//Get pacman position
 		Vector2 pacmanPos = dest.GetPacmanPos ();
 		Dictionary<string, Vector2> destDots = dest.GetDots ();
+
+		double distancePoints = 0;
+		//int countWeight = 1;
+		if (prevNearestDot.HasValue && destDots.ContainsKey(prevNearestDot.Value.Key)) {
+
+			//Get dot position
+			Vector2 dotPos = destDots [prevNearestDot.Value.Key];
+			double manhattanDistance = Mathf.Abs(pacmanPos.x - dotPos.x) + Mathf.Abs(pacmanPos.y - dotPos.y);
+			double grossDistance = manhattanDistance; 
+			//Validate if there are some wall between pacman position and dot
+			RaycastHit2D wallImpact;
+			if (!pacmanScript.validLine (pacmanPos, dotPos, out wallImpact)) {
+				//If there exists any wall between them this dot is penalized
+				grossDistance += wallpenalty;
+				//if(wallImpact.distance <=2)
+				//{
+				//Get base angle to compare
+				Vector2 baseAngle = GetBaseAngleForCompare (wallImpact);
+				//Get angle between pacman pos and dot, so use the x as axis and the dot direction
+				Vector2 vectorToGetAngle = new Vector2 (wallImpact.collider.offset.x - pacmanPos.x, wallImpact.collider.offset.y - pacmanPos.y);
+
+				float angle = Vector2.Angle (baseAngle, vectorToGetAngle);
+
+				grossDistance -= angle / weightAngleWall;
+				//}
+			}
+			distancePoints += grossDistance;
+			//distancePoints += dot.Value/countWeight;
+			//countWeight++;
+		}
+		
+		return numberDots * weightNumberDots + distancePoints * weightDistance;
+	}
+
+	public KeyValuePair<string,double>? GetNearestDot(State state)
+	{
+		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
+		Vector2 pacmanPos = state.GetPacmanPos ();
+		Dictionary<string, Vector2> destDots = state.GetDots ();
 		foreach(var dot in destDots)
 		{
 			double dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
 			//double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
 			dotsDistanceList.Add(new KeyValuePair<string,double>(dot.Key,dotDistance));
 		}
+		KeyValuePair<string,double>? ret = null;
+		if (dotsDistanceList.OrderBy (d => d.Value).Any ()) {
 
-		double distancePoints = 0;
-		//int countWeight = 1;
-		foreach (var dot in dotsDistanceList.OrderBy(d=>d.Value).Take(1)) {
-			double grossDistance = dot.Value;
-			//Get dot position
-			Vector2 dotPos = destDots[dot.Key];
-			//Validate if there are some wall between pacman position and dot
-			RaycastHit2D wallImpact;
-			if(!pacmanScript.validLine(pacmanPos,dotPos,out wallImpact))
-			{
-				//If there exists any wall between them this dot is penalized
-				grossDistance += wallpenalty;
-				if(wallImpact.distance <=2)
-				{
-					//Get base angle to compare
-					Vector2 baseAngle = GetBaseAngleForCompare(wallImpact);
-					//Get angle between pacman pos and dot, so use the x as axis and the dot direction
-					Vector2 vectorToGetAngle = new Vector2(wallImpact.collider.offset.x-pacmanPos.x,wallImpact.collider.offset.y-pacmanPos.y);
-
-					float angle = Vector2.Angle(baseAngle,vectorToGetAngle);
-
-					grossDistance -= angle / weightAngleWall;
-				}
-			}
- 			distancePoints += grossDistance;
-			//distancePoints += dot.Value/countWeight;
-			//countWeight++;
+			string key = dotsDistanceList.OrderBy (d => d.Value).First ().Key;
+			double dotDist = dotsDistanceList.OrderBy (d => d.Value).First ().Value;
+			ret=new KeyValuePair<string, double>(key,dotDist);
 		}
-		
-		return numberDots * weightNumberDots + distancePoints * weightDistance;
+		return ret;
 	}
 
 	public Vector2 GetBaseAngleForCompare(RaycastHit2D wallImpact)
@@ -137,28 +152,43 @@ public class Problem
 		Vector2 impactPoint = wallImpact.point;
 		float yMax = wallCenter.y + wall.size.y / 2;
 		float yMin = wallCenter.y - wall.size.y / 2;
-
-		//if x is lower collision comes from left
-		if (impactPoint.x < wallCenter.x) {
-			if(impactPoint.y == yMax || impactPoint.y == yMin)
-				baseAngle = Vector2.right;
-			else
-			{
-				if(impactPoint.y > wallCenter.y)
-					baseAngle = Vector2.up * -1;
-				else if(impactPoint.y < wallCenter.y)
-					baseAngle = Vector2.up;
+		if (wallImpact.distance <= 1) {
+			//if x collision comes from left
+			if (impactPoint.x < wallCenter.x) {
+				if (impactPoint.y == yMax || impactPoint.y == yMin)
+					baseAngle = Vector2.right;
+				else {
+					if (impactPoint.y >= wallCenter.y)
+						baseAngle = Vector2.up * -1;
+					else if (impactPoint.y < wallCenter.y)
+						baseAngle = Vector2.up;
+				}
+			} else {
+				//if not impact comes from right
+				if (impactPoint.y == yMax || impactPoint.y == yMin)
+					baseAngle = Vector2.right * -1;
+				else {
+					if (impactPoint.y >= wallCenter.y)
+						baseAngle = Vector2.up * -1;
+					else if (impactPoint.y < wallCenter.y)
+						baseAngle = Vector2.up;
+				}
 			}
 		} else {
-		//if not impact comes from right
-			if(impactPoint.y == yMax || impactPoint.y == yMin)
-				baseAngle = Vector2.right  *-1;
-			else
-			{
-				if(impactPoint.y > wallCenter.y)
-					baseAngle = Vector2.up * -1;
-				else if(impactPoint.y < wallCenter.y)
+			//if x collision comes from left
+			if (impactPoint.x < wallCenter.x) {
+				if (impactPoint.y == yMax || impactPoint.y == yMin)
+					baseAngle = Vector2.right * -1;
+				else {
 					baseAngle = Vector2.up;
+				}
+			} else {
+				//if not impact comes from right
+				if (impactPoint.y == yMax || impactPoint.y == yMin)
+					baseAngle = Vector2.right;
+				else {
+						baseAngle = Vector2.up * -1;
+				}
 			}
 		}
 
@@ -350,7 +380,7 @@ public class Node
 		List<Node> childNodes = new List<Node> ();
 		//Get successors for this state
 		State origin = this.State;
-
+		KeyValuePair<string,double>? nearestDot = prob.GetNearestDot(origin);
 		List<KeyValuePair<Vector2,State>> successors = prob.Successor (origin);
 		//Create a node with each posibility
 		foreach (var successor in successors) {
@@ -359,7 +389,7 @@ public class Node
 			int cost = prob.PathCost(this.State,successor.Key,successor.Value);
 			int heurtree = prob.HeurTree(destination);
 			int heurgraph = prob.HeurGraph(destination);
-			double utility = prob.Utility(destination);
+			double utility = prob.Utility(destination,nearestDot);
 			Node parent = this;
 
 			childNodes.Add(new Node(destination,this,action,cost,heurtree,heurgraph,utility));
