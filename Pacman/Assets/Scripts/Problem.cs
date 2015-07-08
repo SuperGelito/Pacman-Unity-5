@@ -75,52 +75,25 @@ public class Problem
 	}
 
 	//Utility function
-	public double Utility(State dest,KeyValuePair<string,double>? prevNearestDot)
+	public double Utility(State dest)
 	{
 		int weightNumberDots = 1000;
 		int weightDistance = 1;
-		//int weightwallcorner = 10;
-
-		int wallpenalty = 100;
-		int weightAngleWall = 6;
-		//Get the number of dots and handle them with higher weight
-		int numberDots = dest.GetNumberOfDots ();
-
-		//Get pacman position
 		Vector2 pacmanPos = dest.GetPacmanPos ();
 		Dictionary<string, Vector2> destDots = dest.GetDots ();
-
 		double distancePoints = 0;
-		//int countWeight = 1;
-		if (prevNearestDot.HasValue && destDots.ContainsKey(prevNearestDot.Value.Key)) {
-
-			//Get dot position
-			Vector2 dotPos = destDots [prevNearestDot.Value.Key];
-			double manhattanDistance = Mathf.Abs(pacmanPos.x - dotPos.x) + Mathf.Abs(pacmanPos.y - dotPos.y);
-			double grossDistance = manhattanDistance; 
-			//Validate if there are some wall between pacman position and dot
-			RaycastHit2D wallImpact;
-			if (!pacmanScript.validLine (pacmanPos, dotPos, out wallImpact)) {
-				//If there exists any wall between them this dot is penalized
-				grossDistance += wallpenalty;
-				//if(wallImpact.distance <=2)
-				//{
-				//Get base angle to compare
-				Vector2 baseAngle = GetBaseAngleForCompare (wallImpact);
-				//Get angle between pacman pos and dot, so use the x as axis and the dot direction
-				Vector2 vectorToGetAngle = new Vector2 (wallImpact.point.x - pacmanPos.x, wallImpact.point.y - pacmanPos.y);
-
-				float angle = Vector2.Angle (baseAngle, vectorToGetAngle);
-
-				grossDistance -= angle / weightAngleWall;
-				//}
-			}
- 			distancePoints += grossDistance;
-			//distancePoints += dot.Value/countWeight;
-			//countWeight++;
+		foreach(var dot in destDots)
+		{
+			int quarterCount = 1;
+			double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
+			if(dot.Value.x > pacmanPos.x)
+				quarterCount+=1;
+			if(dot.Value.y > pacmanPos.y)
+				quarterCount+=quarterCount;
+			distancePoints += dotDistance/quarterCount;
 		}
-		
-		return numberDots * weightNumberDots + distancePoints * weightDistance;
+		double ret = destDots.Count () * weightNumberDots + distancePoints * weightDistance;
+		return ret;
 	}
 
 	public KeyValuePair<string,double>? GetNearestDot(State state)
@@ -364,7 +337,6 @@ public class Node
 		List<Node> childNodes = new List<Node> ();
 		//Get successors for this state
 		State origin = this.State;
-		KeyValuePair<string,double>? nearestDot = prob.GetNearestDot(origin);
 		List<KeyValuePair<Vector2,State>> successors = prob.Successor (origin);
 		//Create a node with each posibility
 		foreach (var successor in successors) {
@@ -373,7 +345,7 @@ public class Node
 			int cost = prob.PathCost(this.State,successor.Key,successor.Value);
 			int heurtree = prob.HeurTree(destination);
 			int heurgraph = prob.HeurGraph(destination);
-			double utility = prob.Utility(destination,nearestDot);
+			double utility = prob.Utility(destination);
 			Node parent = this;
 
 			childNodes.Add(new Node(destination,this,action,cost,heurtree,heurgraph,utility));
