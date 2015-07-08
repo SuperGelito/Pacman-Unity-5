@@ -82,7 +82,7 @@ public class Problem
 		//int weightwallcorner = 10;
 
 		int wallpenalty = 100;
-		int weightAngleWall = 8;
+		int weightAngleWall = 6;
 		//Get the number of dots and handle them with higher weight
 		int numberDots = dest.GetNumberOfDots ();
 
@@ -108,14 +108,14 @@ public class Problem
 				//Get base angle to compare
 				Vector2 baseAngle = GetBaseAngleForCompare (wallImpact);
 				//Get angle between pacman pos and dot, so use the x as axis and the dot direction
-				Vector2 vectorToGetAngle = new Vector2 (wallImpact.collider.offset.x - pacmanPos.x, wallImpact.collider.offset.y - pacmanPos.y);
+				Vector2 vectorToGetAngle = new Vector2 (wallImpact.point.x - pacmanPos.x, wallImpact.point.y - pacmanPos.y);
 
 				float angle = Vector2.Angle (baseAngle, vectorToGetAngle);
 
 				grossDistance -= angle / weightAngleWall;
 				//}
 			}
-			distancePoints += grossDistance;
+ 			distancePoints += grossDistance;
 			//distancePoints += dot.Value/countWeight;
 			//countWeight++;
 		}
@@ -152,10 +152,10 @@ public class Problem
 		Vector2 impactPoint = wallImpact.point;
 		float yMax = wallCenter.y + wall.size.y / 2;
 		float yMin = wallCenter.y - wall.size.y / 2;
-		if (wallImpact.distance <= 1) {
+		if (wallImpact.distance < 2) {
 			//if x collision comes from left
 			if (impactPoint.x < wallCenter.x) {
-				if (impactPoint.y == yMax || impactPoint.y == yMin)
+				if (impactPoint.y == yMax || impactPoint.y == yMin )
 					baseAngle = Vector2.right;
 				else {
 					if (impactPoint.y >= wallCenter.y)
@@ -169,24 +169,8 @@ public class Problem
 					baseAngle = Vector2.right * -1;
 				else {
 					if (impactPoint.y >= wallCenter.y)
-						baseAngle = Vector2.up * -1;
-					else if (impactPoint.y < wallCenter.y)
 						baseAngle = Vector2.up;
-				}
-			}
-		} else {
-			//if x collision comes from left
-			if (impactPoint.x < wallCenter.x) {
-				if (impactPoint.y == yMax || impactPoint.y == yMin)
-					baseAngle = Vector2.right * -1;
-				else {
-					baseAngle = Vector2.up;
-				}
-			} else {
-				//if not impact comes from right
-				if (impactPoint.y == yMax || impactPoint.y == yMin)
-					baseAngle = Vector2.right;
-				else {
+					else if (impactPoint.y < wallCenter.y)
 						baseAngle = Vector2.up * -1;
 				}
 			}
