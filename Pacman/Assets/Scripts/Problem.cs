@@ -84,13 +84,13 @@ public class Problem
 		double distancePoints = 0;
 		foreach(var dot in destDots)
 		{
-			int quarterCount = 1;
 			double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
-			if(dot.Value.x > pacmanPos.x)
-				quarterCount+=1;
-			if(dot.Value.y > pacmanPos.y)
-				quarterCount+=quarterCount;
-			distancePoints += dotDistance/quarterCount;
+			RaycastHit2D wallimpact;
+			if(pacmanScript.validLine(pacmanPos,dest,out wallimpact))
+			{
+
+			}
+			distancePoints += (1/dotDistance);
 		}
 		double ret = destDots.Count () * weightNumberDots + distancePoints * weightDistance;
 		return ret;
