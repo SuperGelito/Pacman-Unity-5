@@ -90,6 +90,17 @@ public class PacmanMove : MonoBehaviour {
 		return (hit.collider == null);
 	}
 
+	public bool validCircle(Vector2 pos,Vector2 dir,float distanceValid, out RaycastHit2D wallImpact)
+	{
+		//Mask of bytes representing 8, if more collision layer needed use 1 << 8 || 1 << 6
+		int mask = 1 << 8;
+		//Vector2 posDir = new Vector2 (pos.x + dir.x, pos.y + dir.y);
+		//RaycastHit2D hit = Physics2D.Linecast(pos + dir, pos,mask);
+		RaycastHit2D hit = Physics2D.CircleCast(pos,radius,dir,distanceValid,mask);
+		wallImpact = hit;
+		return (hit.collider == null);
+	}
+
 	public bool validLine(Vector2 pos,Vector2 dest, out RaycastHit2D wallImpact)
 	{
 		int mask = 1 << 8;

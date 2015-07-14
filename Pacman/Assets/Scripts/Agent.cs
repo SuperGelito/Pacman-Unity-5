@@ -279,7 +279,7 @@ public class ReflextAgent
 	{
 		if (!problem.GoalTest (CurrentNode.State)) {
 			List<Node> successors = CurrentNode.Expand (problem);
-			PriorityUtility listOfSuccessors = new PriorityUtility (MiniMax.Min,successors);
+			PriorityUtility listOfSuccessors = new PriorityUtility (MiniMax.Max,successors);
 			return listOfSuccessors.Pop ();
 		}
 		else

@@ -84,20 +84,16 @@ public class Problem
 		double distancePoints = 0;
 		foreach(var dot in destDots)
 		{
-			double dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
-			//double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
-			RaycastHit2D wallimpact;
-			if(!pacmanScript.validLine(pacmanPos,dot.Value,out wallimpact))
-			{
-				dotDistance+=CalculateDotDistance(wallimpact,dot.Value);
-			}
-			distancePoints += (1/dotDistance);
+			float dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
+			dotDistance+=CalculateDotWallCollisions(pacmanPos,dot.Value);
+			distancePoints += (1/(dotDistance * dotDistance));
 		}
-		double ret = destDots.Count () * weightNumberDots + distancePoints * weightDistance;
+		double ret = (200 - destDots.Count ()) * weightNumberDots + distancePoints * weightDistance;
 		return ret;
 	}
 
-	public KeyValuePair<string,double>? GetNearestDot(State state)
+	/*
+	 public KeyValuePair<string,double>? GetNearestDot(State state)
 	{
 		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
 		Vector2 pacmanPos = state.GetPacmanPos ();
@@ -117,7 +113,6 @@ public class Problem
 		}
 		return ret;
 	}
-
 	public Vector2 GetBaseAngleForCompare(RaycastHit2D wallImpact)
 	{
 		Vector2 baseAngle = Vector2.up;
@@ -152,104 +147,63 @@ public class Problem
 
 		return baseAngle;
 	}
-
-	public double CalculateDotDistance(RaycastHit2D wallImpact,Vector2 dotPos)
+	*/
+	public float CalculateDotWallCollisions(Vector2 pacmanPos,Vector2 dotPos)
 	{	
-		//Get info from collision
-		BoxCollider2D wall = (BoxCollider2D)wallImpact.collider;
-		Vector2 wallCenter = wall.offset;
-		Vector2 impactPoint = wallImpact.point;
-		//Store limits of collider
-		float yMax = wallCenter.y + wall.size.y / 2;
-		float yMin = wallCenter.y - wall.size.y / 2;
-		float xMax = wallCenter.x + wall.size.x / 2;
-		float xMin = wallCenter.x - wall.size.x / 2;
 
-		//Set information from impact place
-		Vector2 impactFrom;
-		if (impactPoint.x == xMin)
-			impactFrom = Vector2.right * -1;
-		else if (impactPoint.x == xMax)
-			impactFrom = Vector2.right;
-		else if (impactPoint.y == yMin)
-			impactFrom = Vector2.up * -1;
-		else
-			impactFrom = Vector2.up;
-		//Set information from dot place
-		Vector2 dotFrom;
-		if (dotPos.x < xMin)
-			dotFrom = Vector2.right * -1;
-		else if (dotPos.x > xMax)
-			dotFrom = Vector2.right;
-		else if (dotPos.y < yMin)
-			dotFrom = Vector2.up * -1;
-		else
-			dotFrom = Vector2.up;
+		//Calculate collision Horizontal and Vertical
+		float distanceHV = 0;
+		Vector2 midPointHV = new Vector2 (pacmanPos.x, dotPos.y);
+		distanceHV += CalculateDotCollision (pacmanPos, midPointHV);
+		if (distanceHV == 0)
+			distanceHV += CalculateDotCollision (midPointHV, dotPos);
+		//Calculate collision Vertical and Horizontal
+		float distanceVH = 0;
+		Vector2 midPointVH = new Vector2 (dotPos.x, pacmanPos.y);
+		distanceVH += CalculateDotCollision (pacmanPos, midPointVH);
+		if (distanceVH == 0)
+			distanceVH += CalculateDotCollision (midPointVH, dotPos);
+		return Mathf.Min(distanceHV,distanceVH);
+	}
 
-		double distance = 0;
+	public float CalculateDotCollision(Vector2 sourcePos,Vector2 destPos)
+	{
+		float distanceToAdd = 0;
+		Vector2 direction = new Vector2 (destPos.x - sourcePos.x,destPos.y - sourcePos.y);
+		float distance = Mathf.Abs (destPos.x - sourcePos.x) + Mathf.Abs (destPos.y - sourcePos.y);
 
-		if (impactFrom == dotFrom * -1) {
-			if (impactFrom == Vector2.right || impactFrom == Vector2.right * -1) {
-				if (dotPos.y >= wallCenter.y) {
-					distance += yMax - dotPos.y;
-					distance += yMax - impactPoint.y;
-				} else if (dotPos.y < wallCenter.y) {
-					distance += dotPos.y - yMin;
-					distance += impactPoint.y - yMin;
-				}
-				distance += xMax - xMin;
-
-			} else {
-				if (dotPos.x >= wallCenter.x) {
-					distance += xMax - dotPos.x;
-					distance += xMax - impactPoint.x;
-				} else if (dotPos.x < wallCenter.x) {
-					distance += dotPos.x - xMin;
-					distance += impactPoint.x - xMin;
-				}
-				distance += yMax - yMin;
-			}
-		}
-		else {
-			if (impactFrom == Vector2.right || impactFrom == Vector2.right * -1) {
-				float xToCompare = dotPos.x;
-				if(xToCompare < xMin)
-					xToCompare = xMin;
-				if(xToCompare > xMax)
-					xToCompare = xMax;
-				distance += Mathf.Abs(impactPoint.x - xToCompare);
-
-				if(dotFrom == Vector2.up)
-				{
-					distance += Mathf.Abs(impactPoint.y - yMax);
-				}
-				else
-				{
-					distance += Mathf.Abs(impactPoint.y - yMin);
-				}
+		//Calculate collision
+		RaycastHit2D wallimpact;
+		if (!pacmanScript.validCircle (sourcePos, direction,distance, out wallimpact)) {
+			BoxCollider2D wall = (BoxCollider2D)wallimpact.collider;
+			float min;
+			float max;
+			float point;
+			float destPoint;
+			if(direction.x == 0)
+			{
+				min = wall.offset.x - wall.size.x/2 - pacmanRadius;
+				max = wall.offset.x + wall.size.x/2 + pacmanRadius;
+				point = wallimpact.point.x;
+				destPoint = destPos.x;
 			}
 			else
 			{
-				float yToCompare = dotPos.y;
-				if(yToCompare < yMin)
-					yToCompare = yMin;
-				if(yToCompare > yMax)
-					yToCompare = yMax;
-				distance += Mathf.Abs(impactPoint.y - yToCompare);
-
-				if(dotFrom == Vector2.right)
-				{
-					distance += Mathf.Abs(impactPoint.x - xMax);
-				}
-				else
-				{
-					distance += Mathf.Abs(impactPoint.x - xMin);
-				}
-
+				min = wall.offset.y - wall.size.y/2 - pacmanRadius;
+				max = wall.offset.y + wall.size.y/2 + pacmanRadius;
+				point = wallimpact.point.y;
+				destPoint = destPos.y;
 			}
+			//Use values to add minimum sum
+			if(destPoint > max)
+				destPoint = max;
+			if(destPoint < min)
+				destPoint = min;
+			float distanceMax = Mathf.Abs(max-point) + Mathf.Abs(destPoint-max);
+			float distanceMin = Mathf.Abs(min-point) + Mathf.Abs(destPoint-min);
+			distanceToAdd += Mathf.Min(distanceMax,distanceMin);
 		}
-
-		return distance;
+		return distanceToAdd;
 	}
 
 	//Successor
