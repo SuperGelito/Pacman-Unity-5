@@ -152,17 +152,17 @@ public class Problem
 	{	
 
 		//Calculate collision Horizontal and Vertical
-		float distanceHV = 0;
-		Vector2 midPointHV = new Vector2 (pacmanPos.x, dotPos.y);
-		distanceHV += CalculateDotCollision (pacmanPos, midPointHV);
-		if (distanceHV == 0)
-			distanceHV += CalculateDotCollision (midPointHV, dotPos);
-		//Calculate collision Vertical and Horizontal
 		float distanceVH = 0;
-		Vector2 midPointVH = new Vector2 (dotPos.x, pacmanPos.y);
+		Vector2 midPointVH = new Vector2 (pacmanPos.x, dotPos.y);
 		distanceVH += CalculateDotCollision (pacmanPos, midPointVH);
 		if (distanceVH == 0)
 			distanceVH += CalculateDotCollision (midPointVH, dotPos);
+		//Calculate collision Vertical and Horizontal
+		float distanceHV = 0;
+		Vector2 midPointHV = new Vector2 (dotPos.x, pacmanPos.y);
+		distanceHV += CalculateDotCollision (pacmanPos, midPointHV);
+		if (distanceHV == 0)
+			distanceHV += CalculateDotCollision (midPointHV, dotPos);
 		return Mathf.Min(distanceHV,distanceVH);
 	}
 
@@ -202,6 +202,9 @@ public class Problem
 			float distanceMax = Mathf.Abs(max-point) + Mathf.Abs(destPoint-max);
 			float distanceMin = Mathf.Abs(min-point) + Mathf.Abs(destPoint-min);
 			distanceToAdd += Mathf.Min(distanceMax,distanceMin);
+			//Calculate distance between wall and destination
+			float distanceWallDest = Mathf.Abs (wall.offset.x - destPos.x) + Mathf.Abs (wall.offset.y - destPos.y);
+			distanceToAdd *= 1 + (distanceWallDest/100);
 		}
 		return distanceToAdd;
 	}
