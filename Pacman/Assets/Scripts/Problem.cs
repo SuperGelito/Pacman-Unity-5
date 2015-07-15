@@ -153,20 +153,32 @@ public class Problem
 
 		//Calculate collision Horizontal and Vertical
 		float distanceVH = 0;
+		float distanceWallDest = 0;
 		Vector2 midPointVH = new Vector2 (pacmanPos.x, dotPos.y);
-		distanceVH += CalculateDotCollision (pacmanPos, midPointVH);
-		if (distanceVH == 0)
-			distanceVH += CalculateDotCollision (midPointVH, dotPos);
+		distanceVH += CalculateDotCollision (pacmanPos, midPointVH,ref distanceWallDest);
+		if (distanceVH == 0) {
+			distanceVH += CalculateDotCollision (midPointVH, dotPos,ref distanceWallDest);
+		}
+		else
+			distanceWallDest += Mathf.Abs(pacmanPos.x - dotPos.x);  
+		distanceVH = distanceVH * (1+(distanceWallDest/100f)); 
+
 		//Calculate collision Vertical and Horizontal
 		float distanceHV = 0;
+		distanceWallDest = 0;
 		Vector2 midPointHV = new Vector2 (dotPos.x, pacmanPos.y);
-		distanceHV += CalculateDotCollision (pacmanPos, midPointHV);
-		if (distanceHV == 0)
-			distanceHV += CalculateDotCollision (midPointHV, dotPos);
+		distanceHV += CalculateDotCollision (pacmanPos, midPointHV,ref distanceWallDest);
+		if (distanceHV == 0) {
+			distanceHV += CalculateDotCollision (midPointHV, dotPos,ref distanceWallDest);
+		}
+		else
+			distanceWallDest += Mathf.Abs(pacmanPos.y - dotPos.y);  
+		distanceHV = distanceHV * (1+(distanceWallDest/100f)); 
+
 		return Mathf.Min(distanceHV,distanceVH);
 	}
 
-	public float CalculateDotCollision(Vector2 sourcePos,Vector2 destPos)
+	public float CalculateDotCollision(Vector2 sourcePos,Vector2 destPos,ref float distanceWallDest)
 	{
 		float distanceToAdd = 0;
 		Vector2 direction = new Vector2 (destPos.x - sourcePos.x,destPos.y - sourcePos.y);
@@ -180,12 +192,14 @@ public class Problem
 			float max;
 			float point;
 			float destPoint;
+			//float distanceWallDest;
 			if(direction.x == 0)
 			{
 				min = wall.offset.x - wall.size.x/2 - pacmanRadius;
 				max = wall.offset.x + wall.size.x/2 + pacmanRadius;
 				point = wallimpact.point.x;
 				destPoint = destPos.x;
+				distanceWallDest = Mathf.Abs (wall.offset.y - destPos.y);
 			}
 			else
 			{
@@ -193,6 +207,7 @@ public class Problem
 				max = wall.offset.y + wall.size.y/2 + pacmanRadius;
 				point = wallimpact.point.y;
 				destPoint = destPos.y;
+				distanceWallDest = Mathf.Abs (wall.offset.x - destPos.x);
 			}
 			//Use values to add minimum sum
 			if(destPoint > max)
@@ -203,8 +218,7 @@ public class Problem
 			float distanceMin = Mathf.Abs(min-point) + Mathf.Abs(destPoint-min);
 			distanceToAdd += Mathf.Min(distanceMax,distanceMin);
 			//Calculate distance between wall and destination
-			float distanceWallDest = Mathf.Abs (wall.offset.x - destPos.x) + Mathf.Abs (wall.offset.y - destPos.y);
-			distanceToAdd *= 1 + (distanceWallDest/100);
+			//distanceToAdd = distanceToAdd * (1+(distanceWallDest/100f));
 		}
 		return distanceToAdd;
 	}
