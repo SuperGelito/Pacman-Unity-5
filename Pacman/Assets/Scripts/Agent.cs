@@ -269,10 +269,15 @@ public class ReflextAgent
 {
 	Problem problem;
 	Node CurrentNode;
+	List<ActorNames> actors;
 	public ReflextAgent(Problem prob)
 	{
 		problem = prob;
 		CurrentNode = new Node (this.problem.initialState, null, null, 0);
+		actors = new List<ActorNames> ();
+		foreach (ActorNames actorName in CurrentNode.State.GetActors ().Keys) {
+			actors.Add(actorName);
+		}
 	}
 	
 	public Node GetNextNode()
@@ -284,8 +289,114 @@ public class ReflextAgent
 		}
 		else
 		return null;
+	}
+
+	public Node MinimaxSearch(int deep,string actor)
+	{
+		ActorNames actorName = (ActorNames)System.Enum.Parse( typeof( ActorNames ), actor );
+		int currentActorIndex = actors.IndexOf (actorName);
+		PriorityUtility listNodes;
+		List<Node> successors = CurrentNode.Expand (problem,actorName);
+		MiniMax minmax = MiniMaxMode (currentActorIndex);
+		listNodes = new PriorityUtility (minmax,successors);
+		//Setup Alpha and Beta values
+		double alpha = double.NegativeInfinity;
+		double beta = double.PositiveInfinity;
+		double currentValue;
+		//Set the current value of node
+		if (minmax == MiniMax.Max)
+			currentValue = double.NegativeInfinity;
+		else
+			currentValue = double.PositiveInfinity;
+		Node selectedNode = null;
+		foreach (Node succ in listNodes) {
+			succ.Utility = MiniMaxUtility (succ, deep, GetNextActorIndex(currentActorIndex),alpha,beta);
+			if(minmax == MiniMax.Max)
+			{
+				if(succ.Utility > currentValue)
+				{
+					currentValue = succ.Utility;
+					selectedNode = succ;
+					alpha = currentValue;
+				}
+			}
+			else if(minmax == MiniMax.Min)
+			{
+				if(succ.Utility < currentValue)
+				{
+					currentValue = succ.Utility;
+					selectedNode = succ;
+					beta = currentValue;
+				}
+			}
+			if(minmax == MiniMax.Max && currentValue > beta)
+				return selectedNode;
+			if(minmax == MiniMax.Min && currentValue < alpha)
+				return selectedNode;
 		}
+
+		return listNodes.Pop ();
+	}
+
+	public double MiniMaxUtility(Node node,int deep,int currentActorIndex,double alpha,double beta)
+	{
+		if (problem.GoalTest (node.State) || node.Depth == deep) {
+			return node.Utility;
+		} else {
+			MiniMax minmax = MiniMaxMode (currentActorIndex);
+			List<Node> successors = node.Expand (problem,actors[currentActorIndex]);
+			PriorityUtility listNodes = new PriorityUtility (minmax,successors);
+			double currentValue;
+			//Set the current value of node
+			if (minmax == MiniMax.Max)
+				currentValue = double.NegativeInfinity;
+			else
+				currentValue = double.PositiveInfinity;
+			foreach (Node succ in listNodes) {
+				succ.Utility = MiniMaxUtility (succ, deep, GetNextActorIndex(currentActorIndex),alpha,beta);
+				if(minmax == MiniMax.Max)
+				{
+					if( succ.Utility > currentValue)
+					{
+						currentValue = succ.Utility;
+						alpha = currentValue;
+					}
+				}
+				else if(minmax == MiniMax.Min && succ.Utility < currentValue)
+				{
+					if(succ.Utility < currentValue)
+					{
+						currentValue = succ.Utility;
+						beta = currentValue;
+					}
+				}
+				if(minmax == MiniMax.Max && currentValue > beta)
+					return currentValue;
+				if(minmax == MiniMax.Min && currentValue < alpha)
+					return currentValue;
+			}
+			return listNodes.Pop().Utility;
+		}
+
+	}
+
+	public MiniMax MiniMaxMode(int currentActorIndex)
+	{
+		if (actors [currentActorIndex] == ActorNames.Pacman)
+			return MiniMax.Max;
+		else
+			return MiniMax.Min;
+	}
 	
+	public int GetNextActorIndex(int currentActorIndex)
+	{
+		int ret;
+		if (currentActorIndex + 1 >= actors.Count)
+			ret = 0;
+		else
+			ret = currentActorIndex + 1;
+		return ret;
+	}
 }
 
 

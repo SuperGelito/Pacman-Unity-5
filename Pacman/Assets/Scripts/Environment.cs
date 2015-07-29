@@ -7,7 +7,7 @@ public class Environment : MonoBehaviour {
 
 	//List of objects
 	GameObject pacman;
-	//List<GameObject> pacdots;
+	List<GameObject> ghost;
 	Node solution;
 	bool reflexMode;
 	//ReflextAgent reflexAgent;
@@ -15,6 +15,8 @@ public class Environment : MonoBehaviour {
 	void Start () {
 		//Initialize pacman
 		pacman = GameObject.FindGameObjectWithTag ("Pacman");
+		ghost = GameObject.FindGameObjectsWithTag ("Ghost").ToList();
+
 		//pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
 		solution = null;
 		//reflexAgent = null;
@@ -22,11 +24,12 @@ public class Environment : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (Input.GetKey(KeyCode.S))
+		Dictionary<string,object> percepts = Percept(pacman);
+		List<GameObject> pacdots = (List<GameObject>)percepts["Pacdot"];
+		Dictionary<string,GameObject> actors = (Dictionary<string,GameObject>)percepts["Actors"];
+		if (Input.GetKey(KeyCode.P))
 		{
-			Dictionary<string,object> percepts = Percept(pacman);
-			List<GameObject> pacdots = (List<GameObject>)percepts["Pacdot"];
-			SearchAgent agent = new SearchAgent ((new Problem (pacman, pacdots)));
+			SearchAgent agent = new SearchAgent ((new Problem (actors, pacdots)));
 			solution = agent.AstarGS ();
 			if(solution != null)
 			{
@@ -40,21 +43,37 @@ public class Environment : MonoBehaviour {
 				pacman.GetComponent<PacmanMove>().SetRoute(moves);
 			}
 		}
-		if (Input.GetKey (KeyCode.R)) {
+		if (Input.GetKey (KeyCode.O)) {
 			reflexMode = !reflexMode;
 		}
 		if (reflexMode) {
-			if(!pacman.GetComponent<PacmanMove>().isMoving)
-			{
-				Dictionary<string,object> percepts = Percept(pacman);
-				List<GameObject> pacdots = (List<GameObject>)percepts["Pacdot"];
-				Problem prob = new Problem(pacman,pacdots);
-				ReflextAgent reflexAgent = new ReflextAgent(prob);
-				Node nextNode = reflexAgent.GetNextNode();
-				if(nextNode!=null)
+				foreach(string actorName in actors.Keys)
 				{
-					ExecuteActionPacman(pacman,nextNode.Action.Value);
+				percepts = Percept(pacman);
+				pacdots = (List<GameObject>)percepts["Pacdot"];
+				actors = (Dictionary<string,GameObject>)percepts["Actors"];
+				Problem prob = new Problem(actors,pacdots);
+				ReflextAgent reflexAgent = new ReflextAgent(prob);
+
+				bool isMoving;
+				bool inJail = false;
+				if(actorName == "Pacman")
+					isMoving = pacman.GetComponent<PacmanMove>().isMoving;
+				else
+					isMoving = actors[actorName].GetComponent<GhostMove>().isMoving;
+
+				if(!isMoving && !inJail)
+				{
+					Node nextNode = reflexAgent.MinimaxSearch(4,actorName);
+					if(nextNode!=null)
+					{
+						if(actorName == "Pacman")
+							ExecuteActionPacman(pacman,nextNode.Action.Value);
+						else
+							ExecuteActionGhost(actors[actorName],nextNode.Action.Value);
+					}
 				}
+
 			}
 		}
 	}
@@ -75,10 +94,18 @@ public class Environment : MonoBehaviour {
 	//Perceptions that an agent get from environment
 	Dictionary<string,object> Percept(GameObject agent){
 		pacman = GameObject.FindGameObjectWithTag ("Pacman");
+		ghost = GameObject.FindGameObjectsWithTag ("Ghost").ToList();
 		List<GameObject> pacdots = GameObject.FindGameObjectsWithTag ("Pacdot").ToList();
+		Dictionary<string,GameObject> actors = new Dictionary<string, GameObject>();
+		actors.Add(pacman.name,pacman);
+		foreach(GameObject g in ghost)
+		{
+			actors.Add(g.name,g);
+		}
 		Dictionary<string,object> percepts = new Dictionary<string, object> ();
 		//percepts.Add ("Pacman", pacman);
 		percepts.Add ("Pacdot", pacdots);
+		percepts.Add ("Actors", actors);
 		return percepts;
 	}
 
@@ -86,6 +113,12 @@ public class Environment : MonoBehaviour {
 	void ExecuteActionPacman(GameObject agent,Vector2 action)
 	{
 		agent.GetComponent<PacmanMove> ().Move (action);
+	}
+
+	//Execute action
+	void ExecuteActionGhost(GameObject agent,Vector2 action)
+	{
+		agent.GetComponent<GhostMove> ().Move (action);
 	}
 
 	//Get the sequence of actions based on percept

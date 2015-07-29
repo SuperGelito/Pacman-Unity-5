@@ -5,7 +5,7 @@ public class Pacdot : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D co) {
 		// Do Stuff...
-		if (co.name == "pacman")
+		if (co.name == "Pacman")
 			Destroy(gameObject);
 		//increase points
 	}

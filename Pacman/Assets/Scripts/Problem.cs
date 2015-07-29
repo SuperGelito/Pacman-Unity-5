@@ -5,19 +5,27 @@ using System.Linq;
 
 public class Problem
 {
-	float pacmanRadius;
+	float actorRadius;
 	float dotRadius;
 	public State initialState;
 	//Pacman script is accessed to use simulator for action validations
 	PacmanMove pacmanScript;
+	//GhostScript
+	//GhostMove ghostScript;
 	//Initialize problem
-	public Problem(GameObject pacman,List<GameObject> pacDots){
-		pacmanScript = pacman.GetComponent<PacmanMove> ();
+	public Problem(Dictionary<string,GameObject> actors,List<GameObject> pacDots){
+		pacmanScript = actors[ActorNames.Pacman.ToString()].GetComponent<PacmanMove> ();
 		//Assign radius
-		pacmanRadius = pacmanScript.radius;
+		actorRadius = pacmanScript.radius;
 		dotRadius = 0.25f;
 		//Assign initialState
-		Vector2 pacmanPos = pacman.transform.position;
+
+		//Get actorPositions
+		Dictionary<ActorNames,Vector2> actorPos = new Dictionary<ActorNames, Vector2> ();
+		foreach (string actorName in actors.Keys) {
+			ActorNames actorNameEnum = (ActorNames)System.Enum.Parse( typeof( ActorNames ), actorName );
+			actorPos.Add(actorNameEnum,(Vector2)actors[actorName].transform.position);
+		}
 
 		//Structure to store information from dots
 		Dictionary<string,Vector2> dotPos = new Dictionary<string, Vector2> ();
@@ -27,7 +35,7 @@ public class Problem
 			dotPos.Add(dot.name,dot.transform.position);
 		}
 		//Set initialState
-		initialState = new State (pacmanPos, dotPos);
+		initialState = new State (actorPos, dotPos);
 	}
 	//Goal test
 	public bool GoalTest(State state)
@@ -77,105 +85,127 @@ public class Problem
 	//Utility function
 	public double Utility(State dest)
 	{
-		int weightNumberDots = 1000;
-		int weightDistance = 1;
+
 		Vector2 pacmanPos = dest.GetPacmanPos ();
+
+		//Feature1:Calculate dots left
 		Dictionary<string, Vector2> destDots = dest.GetDots ();
+		//Feature2:Calculate distance from all dots
 		double distancePoints = 0;
 		foreach(var dot in destDots)
 		{
 			float dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
-			dotDistance+=CalculateDotWallCollisions(pacmanPos,dot.Value);
+			//float distanceNearestWall;
+			//float distanceOverWall = CalculateWallCollisions(pacmanPos,dot.Value);
+			//dotDistance += distanceOverWall;
+			//if(distanceNearestWall != 0)
+			//dotDistance = dotDistance * (1+(distanceNearestWall/100f)); 
 			distancePoints += (1/(dotDistance * dotDistance));
 		}
-		double ret = (200 - destDots.Count ()) * weightNumberDots + distancePoints * weightDistance;
-		return ret;
-	}
+		//Feature3:Calculate distance from pacman to ghost
+		List<Vector2> ghostPositions = new List<Vector2> ();
+		ghostPositions.Add(dest.GetGhostPos (ActorNames.Blinky));
+		ghostPositions.Add(dest.GetGhostPos (ActorNames.Pinky));
+		ghostPositions.Add(dest.GetGhostPos (ActorNames.Inky));
+		ghostPositions.Add(dest.GetGhostPos (ActorNames.Clyde));
+		float ghostDistance = 0;
+		float deathImpact = 0;
+		List<Vector2> quandrantMatching = new List<Vector2> ();
+		int ghostinsameposition = 0;
+		foreach (Vector2 gpos in ghostPositions) {
+			ghostDistance += Mathf.Abs(pacmanPos.x - gpos.x) + Mathf.Abs(pacmanPos.y - gpos.y);
+			//ghostDistance += CalculateWallCollisions (pacmanPos, gpos);
 
-	/*
-	 public KeyValuePair<string,double>? GetNearestDot(State state)
-	{
-		List<KeyValuePair<string,double>> dotsDistanceList = new List<KeyValuePair<string, double>> ();
-		Vector2 pacmanPos = state.GetPacmanPos ();
-		Dictionary<string, Vector2> destDots = state.GetDots ();
-		foreach(var dot in destDots)
-		{
-			double dotDistance = Mathf.Abs(pacmanPos.x - dot.Value.x) + Mathf.Abs(pacmanPos.y - dot.Value.y);
-			//double dotDistance = Vector2.Distance(pacmanPos,dot.Value);
-			dotsDistanceList.Add(new KeyValuePair<string,double>(dot.Key,dotDistance));
-		}
-		KeyValuePair<string,double>? ret = null;
-		if (dotsDistanceList.OrderBy (d => d.Value).Any ()) {
+			//Feature4: Calculate death in next movement
+			RaycastHit2D hit;
+			int mask = 1 << 9 | 1 << 8;
+			if(!pacmanScript.validLine(pacmanPos,gpos,out hit,mask))
+			{
+				if(hit.collider.tag == "Ghost")
+					deathImpact+=1;
 
-			string key = dotsDistanceList.OrderBy (d => d.Value).First ().Key;
-			double dotDist = dotsDistanceList.OrderBy (d => d.Value).First ().Value;
-			ret=new KeyValuePair<string, double>(key,dotDist);
-		}
-		return ret;
-	}
-	public Vector2 GetBaseAngleForCompare(RaycastHit2D wallImpact)
-	{
-		Vector2 baseAngle = Vector2.up;
-		BoxCollider2D wall = (BoxCollider2D)wallImpact.collider;
-		Vector2 wallCenter = wall.offset;
-		Vector2 impactPoint = wallImpact.point;
-		float yMax = wallCenter.y + wall.size.y / 2;
-		float yMin = wallCenter.y - wall.size.y / 2;
-		if (wallImpact.distance < 2) {
-			//if x collision comes from left
-			if (impactPoint.x < wallCenter.x) {
-				if (impactPoint.y == yMax || impactPoint.y == yMin )
-					baseAngle = Vector2.right;
-				else {
-					if (impactPoint.y >= wallCenter.y)
-						baseAngle = Vector2.up * -1;
-					else if (impactPoint.y < wallCenter.y)
-						baseAngle = Vector2.up;
-				}
-			} else {
-				//if not impact comes from right
-				if (impactPoint.y == yMax || impactPoint.y == yMin)
-					baseAngle = Vector2.right * -1;
-				else {
-					if (impactPoint.y >= wallCenter.y)
-						baseAngle = Vector2.up;
-					else if (impactPoint.y < wallCenter.y)
-						baseAngle = Vector2.up * -1;
-				}
 			}
+				
+
+
+
+			//Feature5: Add ghost to a cuadrant of pacman to see if he is surrounded
+			if(gpos.x > pacmanPos.x)
+				if(!quandrantMatching.Contains(Vector2.right))
+					quandrantMatching.Add(Vector2.right);
+			if(gpos.x < pacmanPos.x)
+				if(!quandrantMatching.Contains(Vector2.right * -1))
+					quandrantMatching.Add(Vector2.right * -1);
+			if(gpos.y > pacmanPos.y)
+				if(!quandrantMatching.Contains(Vector2.up))
+					quandrantMatching.Add(Vector2.up);
+			if(gpos.y < pacmanPos.y)
+				if(!quandrantMatching.Contains(Vector2.up * -1))
+					quandrantMatching.Add(Vector2.up * -1);
+
+
+
 		}
+		//feature6:Get number of ghosts in same position
+		ghostinsameposition= ghostPositions.Count() + ghostPositions.GroupBy(g => g).Count () ;
 
-		return baseAngle;
+
+		//Feature weight
+		//f1
+		int weightNumberDots = 100;
+		//f2
+		int weightDistance = 1;
+		//f3
+		int weightGhostDistance = 10;
+		//f4
+		int weightDeath = -1000;
+		//f5
+		int weightquandrantMatching = -20;
+		//f6
+		int weightGhostInSamePosition = 50;
+
+		double ret = (200 - destDots.Count ()) *weightNumberDots//f1
+			+ distancePoints * weightDistance//f2
+				+ ghostDistance * weightGhostDistance//f3
+				+ weightDeath * deathImpact//f4
+				+ weightquandrantMatching * quandrantMatching.Count()//f5
+				+ weightGhostInSamePosition * ghostinsameposition;//f6
+		return ret;
 	}
-	*/
-	public float CalculateDotWallCollisions(Vector2 pacmanPos,Vector2 dotPos)
+	
+	public float CalculateWallCollisions(Vector2 pacmanPos,Vector2 dotPos)
 	{	
-
+		float distance = 0;
+		float error = 1;
 		//Calculate collision Horizontal and Vertical
 		float distanceVH = 0;
-		float distanceWallDest = 0;
+		float distanceWallDestVH = 0;
 		Vector2 midPointVH = new Vector2 (pacmanPos.x, dotPos.y);
-		distanceVH += CalculateDotCollision (pacmanPos, midPointVH,ref distanceWallDest);
+		distanceVH += CalculateDotCollision (pacmanPos, midPointVH,ref distanceWallDestVH);
 		if (distanceVH == 0) {
-			distanceVH += CalculateDotCollision (midPointVH, dotPos,ref distanceWallDest);
+			distanceVH += CalculateDotCollision (midPointVH, dotPos,ref distanceWallDestVH);
 		}
-		else
-			distanceWallDest += Mathf.Abs(pacmanPos.x - dotPos.x);  
-		distanceVH = distanceVH * (1+(distanceWallDest/100f)); 
 
 		//Calculate collision Vertical and Horizontal
 		float distanceHV = 0;
-		distanceWallDest = 0;
+		float distanceWallDestHV = 0;
 		Vector2 midPointHV = new Vector2 (dotPos.x, pacmanPos.y);
-		distanceHV += CalculateDotCollision (pacmanPos, midPointHV,ref distanceWallDest);
+		distanceHV += CalculateDotCollision (pacmanPos, midPointHV,ref distanceWallDestHV);
 		if (distanceHV == 0) {
-			distanceHV += CalculateDotCollision (midPointHV, dotPos,ref distanceWallDest);
+			distanceHV += CalculateDotCollision (midPointHV, dotPos,ref distanceWallDestHV);
 		}
-		else
-			distanceWallDest += Mathf.Abs(pacmanPos.y - dotPos.y);  
-		distanceHV = distanceHV * (1+(distanceWallDest/100f)); 
 
-		return Mathf.Min(distanceHV,distanceVH);
+		if ((distanceWallDestHV - distanceWallDestVH) < error) {
+			if (distanceHV < distanceVH) {
+				distance = distanceHV;
+			} else {
+				distance = distanceVH;
+			}
+		} else if (distanceWallDestHV == 0 || distanceWallDestHV > distanceWallDestVH)
+			distance = distanceHV;
+		else if (distanceWallDestVH == 0 || distanceWallDestVH > distanceWallDestHV) 
+			distance = distanceVH;
+		return distance;
 	}
 
 	public float CalculateDotCollision(Vector2 sourcePos,Vector2 destPos,ref float distanceWallDest)
@@ -195,19 +225,19 @@ public class Problem
 			//float distanceWallDest;
 			if(direction.x == 0)
 			{
-				min = wall.offset.x - wall.size.x/2 - pacmanRadius;
-				max = wall.offset.x + wall.size.x/2 + pacmanRadius;
+				min = wall.offset.x - wall.size.x/2 - actorRadius;
+				max = wall.offset.x + wall.size.x/2 + actorRadius;
 				point = wallimpact.point.x;
 				destPoint = destPos.x;
-				distanceWallDest = Mathf.Abs (wall.offset.y - destPos.y);
+				distanceWallDest = Mathf.Abs (wallimpact.point.y - sourcePos.y);
 			}
 			else
 			{
-				min = wall.offset.y - wall.size.y/2 - pacmanRadius;
-				max = wall.offset.y + wall.size.y/2 + pacmanRadius;
+				min = wall.offset.y - wall.size.y/2 - actorRadius;
+				max = wall.offset.y + wall.size.y/2 + actorRadius;
 				point = wallimpact.point.y;
 				destPoint = destPos.y;
-				distanceWallDest = Mathf.Abs (wall.offset.x - destPos.x);
+				distanceWallDest = Mathf.Abs (wallimpact.point.x - sourcePos.x);
 			}
 			//Use values to add minimum sum
 			if(destPoint > max)
@@ -224,7 +254,7 @@ public class Problem
 	}
 
 	//Successor
-	public List<KeyValuePair<Vector2,State>> Successor(State state)
+	public List<KeyValuePair<Vector2,State>> Successor(State state,ActorNames actor)
 	{
 		//Next states
 		List<KeyValuePair<Vector2,State>> nextStates = new List<KeyValuePair<Vector2, State>> ();
@@ -233,14 +263,13 @@ public class Problem
 		List<Vector2> totalMovs = pacmanScript.GetDefaultMovements ();
 		//Create a list with valid movements
 		List<Vector2> validMovs = new List<Vector2> ();
+
 		//Get state pacman position
-		Vector2 pacmanPos = state.GetPacmanPos ();
-		//Get state dots
-		//Dictionary<string,Vector2> dots = state.GetDots();
+		Vector2 actorPos = state.GetActorPos (actor);
 		//Loop movements to validate using unity collisions
 		foreach (Vector2 mov in totalMovs) {
 			//If the movement is valid is moved to valid movements
-			if(pacmanScript.validCircle(pacmanPos,mov))
+			if(pacmanScript.validCircle(actorPos,mov))
 				validMovs.Add(mov);
 		}
 
@@ -252,14 +281,14 @@ public class Problem
 			movUpdated.y = validMov.y /2;
 
 			//Set next pacman state
-			Vector2 nextPacmanPos = pacmanPos + movUpdated;
+			Vector2 nextActorPos = actorPos + movUpdated;
 
 			//Calculate successor state
 			//Create intervals to check if some dot is collides with pacman
-			float xLeft = nextPacmanPos.x - pacmanRadius;
-			float xRight = nextPacmanPos.x + pacmanRadius;
-			float yDown = nextPacmanPos.y - pacmanRadius;
-			float yUp = nextPacmanPos.y + pacmanRadius;
+			float xLeft = nextActorPos.x - actorRadius;
+			float xRight = nextActorPos.x + actorRadius;
+			float yDown = nextActorPos.y - actorRadius;
+			float yUp = nextActorPos.y + actorRadius;
 
 			//Copy dots to next state
 			Dictionary<string,Vector2> dots = state.GetDots();
@@ -268,32 +297,47 @@ public class Problem
 			{
 				nextDots.Add(dotKey,dots[dotKey]);
 			}
-			//Loop dots to check collisions
-			List<string> dotsToRemove = new List<string>();
-			foreach(string dotKey in nextDots.Keys)
-			{
-				Vector2 dotPos = nextDots[dotKey];
-				//bool collision = false;
-				bool collisionx = false;
-				bool collisiony = false;
-				if((xLeft >= dotPos.x - dotRadius && xLeft <= dotPos.x + dotRadius) ||
-				   (xRight <= dotPos.x + dotRadius && xRight >= dotPos.x - dotRadius) ||
-				   xLeft <= dotPos.x - dotRadius && xRight >=dotPos.x + dotRadius)
-					collisionx=true;
 
-				if((yDown >= dotPos.y - dotRadius && yDown <= dotPos.y + dotRadius) ||
-				   (yUp <= dotPos.y + dotRadius && yUp >= dotPos.y - dotRadius) ||
-				   yDown <= dotPos.y - dotRadius && yUp >=dotPos.y + dotRadius)
-					collisiony=true;
-
-				if(collisionx && collisiony)
-					dotsToRemove.Add(dotKey);
-			}
-			foreach(string dot in dotsToRemove)
+			if(actor == ActorNames.Pacman)
 			{
-				nextDots.Remove(dot);
+
+				//Loop dots to check collisions
+				List<string> dotsToRemove = new List<string>();
+				foreach(string dotKey in nextDots.Keys)
+				{
+					Vector2 dotPos = nextDots[dotKey];
+					//bool collision = false;
+					bool collisionx = false;
+					bool collisiony = false;
+					if((xLeft >= dotPos.x - dotRadius && xLeft <= dotPos.x + dotRadius) ||
+					   (xRight <= dotPos.x + dotRadius && xRight >= dotPos.x - dotRadius) ||
+					   xLeft <= dotPos.x - dotRadius && xRight >=dotPos.x + dotRadius)
+						collisionx=true;
+
+					if((yDown >= dotPos.y - dotRadius && yDown <= dotPos.y + dotRadius) ||
+					   (yUp <= dotPos.y + dotRadius && yUp >= dotPos.y - dotRadius) ||
+					   yDown <= dotPos.y - dotRadius && yUp >=dotPos.y + dotRadius)
+						collisiony=true;
+
+					if(collisionx && collisiony)
+						dotsToRemove.Add(dotKey);
+				}
+				foreach(string dot in dotsToRemove)
+				{
+					nextDots.Remove(dot);
+				}
 			}
-			nextStates.Add(new KeyValuePair<Vector2,State>(validMov,new State(nextPacmanPos,nextDots)));
+			//Configure nextState
+			Dictionary<ActorNames,Vector2> oldActors = state.GetActors();
+			Dictionary<ActorNames,Vector2> nextActors = new Dictionary<ActorNames, Vector2>();
+			foreach(ActorNames actorKey in oldActors.Keys)
+			{
+				if(actorKey != actor)
+					nextActors.Add(actorKey,oldActors[actorKey]);
+				else
+					nextActors.Add(actorKey,nextActorPos);
+			}
+			nextStates.Add(new KeyValuePair<Vector2,State>(validMov,new State(nextActors,nextDots)));
 		}
 
 		return nextStates;
@@ -306,13 +350,21 @@ public class Problem
 public class State
 {
 	public string idState;
-	Vector2 pacman;
+	//Vector2 pacman;
 	Dictionary<string,Vector2> dots;
-	public State(Vector2 pacmanPosition,Dictionary<string,Vector2> dotsPositions)
+	Dictionary<ActorNames,Vector2> actors;
+	/*public State(Vector2 pacmanPosition,Dictionary<string,Vector2> dotsPositions)
 	{
-		pacman = pacmanPosition;
+		new State (pacmanPosition, dotsPositions, Dictionary<string,Vector2> ());
+	}*/
+
+	public State(Dictionary<ActorNames,Vector2> actorsPositions,Dictionary<string,Vector2> dotsPositions)
+	{
+		actors = actorsPositions;
 		dots = dotsPositions;
-		idState += pacman.ToString ();
+		foreach (var actor in actors.Keys) {
+			idState+=actor + "-" + actors[actor].ToString();
+		}
 		foreach (string dotKey in dots.Keys) {
 			idState+=dotKey + "-";
 		}
@@ -320,7 +372,22 @@ public class State
 	
 	public Vector2 GetPacmanPos()
 	{
-		return pacman;
+		return GetActorPos(ActorNames.Pacman);
+	}
+
+	public Vector2 GetGhostPos(ActorNames ghostName)
+	{
+		return GetActorPos(ghostName);
+	}
+
+	public Vector2 GetActorPos(ActorNames actor)
+	{
+		return actors[actor];
+	}
+
+	public Dictionary<ActorNames,Vector2> GetActors()
+	{
+		return actors;
 	}
 
 	public Dictionary<string,Vector2> GetDots()
@@ -332,6 +399,15 @@ public class State
 	{
 		return dots.Count;
 	}
+}
+
+public enum ActorNames
+{
+	Pacman = 1,
+	Blinky = 2,
+	Pinky = 3,
+	Inky = 4,
+	Clyde = 5
 }
 
 /// <summary>
@@ -403,12 +479,12 @@ public class Node
 	/// Return nodes after expanding
 	/// </summary>
 	/// <param name="prob">Problem that generates successors</param>
-	public List<Node> Expand(Problem prob)
+	public List<Node> Expand(Problem prob,ActorNames actorName = ActorNames.Pacman)
 	{
 		List<Node> childNodes = new List<Node> ();
 		//Get successors for this state
 		State origin = this.State;
-		List<KeyValuePair<Vector2,State>> successors = prob.Successor (origin);
+		List<KeyValuePair<Vector2,State>> successors = prob.Successor (origin,actorName);
 		//Create a node with each posibility
 		foreach (var successor in successors) {
 			Vector2 action = successor.Key;
